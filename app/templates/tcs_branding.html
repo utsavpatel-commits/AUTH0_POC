@@ -1,0 +1,57 @@
+{% extends "tcs_base.html" %}
+{% block title %}Universal Login{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Universal Login</h1>
+<p class="text-muted mb-4">Customize your login box to match your brand identity.</p>
+
+<div class="row g-4">
+    <div class="col-md-7">
+        <div class="tcs-panel">
+            <div class="tcs-panel-header">Login Box Preview</div>
+            <div class="tcs-panel-body text-center py-5" style="background:#f7f8f9;">
+                <div class="mx-auto p-4 bg-white border rounded-3 shadow-sm" style="max-width:360px;">
+                    <div class="mb-3">
+                        <i class="bi bi-shield-lock-fill text-primary fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Welcome</h5>
+                    <p class="text-muted small mb-3">Log in to TCS Identity Platform</p>
+                    <input type="email" class="form-control mb-2" placeholder="Email address" disabled>
+                    <input type="password" class="form-control mb-3" placeholder="Password" disabled>
+                    <button class="btn btn-auth0 w-100 mb-2" disabled>Continue</button>
+                    <div class="text-muted small">or</div>
+                    <button class="btn btn-auth0-outline w-100 mt-2" disabled>
+                        <i class="bi bi-google me-1"></i>Continue with Google
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="tcs-panel mb-3">
+            <div class="tcs-panel-header">Branding Settings</div>
+            <div class="tcs-panel-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Logo URL</label>
+                    <input type="text" class="form-control" value="https://cdn.auth0.com/manhattan/versions/1.0.0/logo.svg" disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Primary Color</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="color" value="#635dff" disabled style="width:40px;height:32px;border:none;">
+                        <input type="text" class="form-control" value="#635dff" disabled>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Page Background</label>
+                    <input type="text" class="form-control" value="#f7f8f9" disabled>
+                </div>
+                <p class="text-muted small mb-3">Branding is managed in Auth0 Dashboard → Branding → Universal Login. This preview shows the default Auth0 theme.</p>
+                <a href="/tcs/login" class="btn btn-auth0 w-100">
+                    <i class="bi bi-play-fill me-1"></i>Try It Out
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "tcs_base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Settings</h1>
+<p class="text-muted mb-4">Tenant configuration and platform settings.</p>
+
+<div class="tcs-panel mb-4">
+    <div class="tcs-panel-header">General</div>
+    <div class="tcs-panel-body">
+        <table class="table table-sm table-borderless mb-0">
+            <tr>
+                <td class="text-muted" style="width:35%">Tenant Name</td>
+                <td class="fw-semibold">TCS Identity Platform</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Auth0 Domain</td>
+                <td><code>{{ auth0_domain }}</code></td>
+            </tr>
+            <tr>
+                <td class="text-muted">Region</td>
+                <td>US (default)</td>
+            </tr>
+            <tr>
+                <td class="text-muted">Environment</td>
+                <td><span class="badge bg-warning text-dark">Development</span></td>
+            </tr>
+            <tr>
+                <td class="text-muted">Signed in as</td>
+                <td>{{ tcs_email }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="tcs-panel mb-4">
+    <div class="tcs-panel-header">Architecture</div>
+    <div class="tcs-panel-body">
+        <p class="small text-muted mb-3">This POC demonstrates the IdP = credentials only architecture. JWT carries only <code>sub</code>, <code>email</code>, <code>email_verified</code>. Roles and entitlements are resolved from the Platform Database.</p>
+        <a href="/architecture" class="btn btn-auth0-outline me-2">View Architecture</a>
+        <a href="/docs" class="btn btn-auth0-outline">OpenAPI Docs</a>
+    </div>
+</div>
+
+<div class="tcs-panel">
+    <div class="tcs-panel-header">Danger Zone</div>
+    <div class="tcs-panel-body">
+        <p class="small text-muted mb-3">Delete organisations permanently from Auth0 and the platform database.</p>
+        <a href="/tcs/organizations" class="btn btn-outline-danger btn-sm">Manage Organisations</a>
+    </div>
+</div>
+{% endblock %}

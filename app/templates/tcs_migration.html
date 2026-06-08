@@ -1,0 +1,96 @@
+{% extends "tcs_base.html" %}
+{% block title %}Migration{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Migration</h1>
+<p class="text-muted mb-4">Migrate legacy users to Auth0 across all organisations.</p>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="tcs-stat-grid flex-grow-1 mb-0 me-4" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="tcs-stat-card">
+            <div class="value">{{ total_legacy }}</div>
+            <div class="label">Legacy Users</div>
+        </div>
+        <div class="tcs-stat-card">
+            <div class="value text-success">{{ total_migrated }}</div>
+            <div class="label">Migrated</div>
+        </div>
+        <div class="tcs-stat-card">
+            <div class="value text-warning">{{ total_email_sent }}</div>
+            <div class="label">Email Sent</div>
+        </div>
+        <div class="tcs-stat-card">
+            <div class="value text-danger">{{ total_pending }}</div>
+            <div class="label">Pending</div>
+        </div>
+    </div>
+    <button class="btn btn-auth0 px-4" onclick="migrateAll(this)" {% if total_pending == 0 %}disabled{% endif %}>
+        <i class="bi bi-send-fill me-1"></i>Migrate All
+        {% if total_pending > 0 %}<span class="badge bg-white text-primary ms-1">{{ total_pending }}</span>{% endif %}
+    </button>
+</div>
+
+<div class="tcs-panel mb-4">
+    <div class="tcs-panel-header">Overall Progress — {{ overall_pct }}%</div>
+    <div class="tcs-panel-body">
+        <div class="progress" style="height:10px;border-radius:6px;">
+            <div class="progress-bar" style="width:{{ overall_pct }}%;background:var(--auth0-blue);"></div>
+        </div>
+    </div>
+</div>
+
+<div class="tcs-panel">
+    <div class="tcs-panel-header">Per-Organisation Migration</div>
+    <div class="table-responsive">
+        <table class="table tcs-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Organisation</th>
+                    <th class="text-center">Legacy</th>
+                    <th class="text-center">Migrated</th>
+                    <th class="text-center">Email Sent</th>
+                    <th class="text-center">Pending</th>
+                    <th>Progress</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in org_stats %}
+                <tr id="org-row-{{ s.org.id }}">
+                    <td class="ps-4 fw-semibold">{{ s.org.name }}</td>
+                    <td class="text-center">{{ s.legacy_total }}</td>
+                    <td class="text-center text-success">{{ s.migrated }}</td>
+                    <td class="text-center text-warning">{{ s.email_sent }}</td>
+                    <td class="text-center">
+                        {% if s.pending > 0 %}<span class="badge bg-danger">{{ s.pending }}</span>{% else %}0{% endif %}
+                    </td>
+                    <td style="min-width:120px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:5px;">
+                                <div class="progress-bar bg-success" style="width:{{ s.pct }}%;"></div>
+                            </div>
+                            <small>{{ s.pct }}%</small>
+                        </div>
+                    </td>
+                    <td class="pe-3">
+                        {% if s.pending > 0 %}
+                        <button class="btn btn-auth0-outline btn-sm" onclick="migrateOrg('{{ s.org.id }}', this)">
+                            <i class="bi bi-send me-1"></i>Send emails
+                        </button>
+                        {% else %}
+                        <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Done</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="migrateResult" class="mt-4" style="display:none;"></div>
+{% endblock %}
+
+{% block scripts %}
+{% include "tcs_scripts.html" %}
+{% endblock %}

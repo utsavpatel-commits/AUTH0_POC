@@ -1,5 +1,5 @@
-{% extends "base.html" %}
-{% block title %}Subscription & Billing — TCS Identity Platform{% endblock %}
+{% extends "tcs_base.html" %}
+{% block title %}Subscriptions{% endblock %}
 
 {% block head %}
 <style>
@@ -21,13 +21,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="section-header d-flex justify-content-between align-items-start">
-    <div>
-        <h4 class="fw-bold mb-1"><i class="bi bi-credit-card-2-front me-2"></i>Subscription &amp; Billing</h4>
-        <p class="mb-0 opacity-75 small">Manage organisation tiers, add-ons, and MFA policies across all tenants.</p>
-    </div>
-    <span class="tcs-badge"><i class="bi bi-shield-fill-check me-1"></i>TCS Admin</span>
-</div>
+<h1 class="tcs-page-title">Subscriptions</h1>
+<p class="text-muted mb-4">Manage organisation tiers, add-ons, and MFA policies across all tenants.</p>
 
 <!-- Tier Comparison Table -->
 <div class="card mb-4">

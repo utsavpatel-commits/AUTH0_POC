@@ -1,0 +1,241 @@
+<script>
+async function loadRoles(showTable = false) {
+    const result = document.getElementById('rolesResult');
+    const roleSelect = document.getElementById('assignRoleId');
+    try {
+        const resp = await fetch('/api/tcs/roles');
+        const data = await resp.json();
+        const roles = data.roles || [];
+
+        if (roleSelect) {
+            roleSelect.innerHTML = roles.length
+                ? `<option value="">Choose role…</option>` + roles.map(r => `<option value="${r.id}">${r.name}</option>`).join('')
+                : `<option value="">No roles — create one above</option>`;
+        }
+
+        if (showTable && result) {
+            if (roles.length) {
+                result.innerHTML = `<div class="table-responsive"><table class="table tcs-table mb-0">
+                    <thead><tr><th class="ps-3">Role Name</th><th>Description</th><th>Auth0 ID</th><th></th></tr></thead>
+                    <tbody>${roles.map(r => `<tr>
+                        <td class="ps-3 fw-semibold">${r.name}</td>
+                        <td class="text-muted">${r.description || '—'}</td>
+                        <td><code style="font-size:.75rem;">${r.id}</code></td>
+                        <td><button class="btn btn-outline-danger btn-sm" onclick="deleteRole('${r.id}','${r.name}')">Delete</button></td>
+                    </tr>`).join('')}</tbody>
+                </table></div>`;
+            } else {
+                result.innerHTML = `<div class="alert alert-info mb-0 py-2 small">No roles found in Auth0. Create one above.</div>`;
+            }
+        }
+    } catch(err) {
+        if (roleSelect) roleSelect.innerHTML = `<option value="">Error loading roles</option>`;
+    }
+}
+
+async function loadOrgUsers(orgId) {
+    const userSelect = document.getElementById('assignUserId');
+    if (!userSelect) return;
+    if (!orgId) { userSelect.innerHTML = `<option value="">Select org first…</option>`; return; }
+    userSelect.innerHTML = `<option value="">Loading…</option>`;
+    try {
+        const resp = await fetch(`/api/admin/users?org_id=${orgId}`);
+        const data = await resp.json();
+        const users = data.users || [];
+        userSelect.innerHTML = users.length
+            ? `<option value="">Choose user…</option>` + users.map(u => `<option value="${u.id}">${u.email} (${u.role || 'no role'})</option>`).join('')
+            : `<option value="">No users in this org</option>`;
+    } catch(err) {
+        userSelect.innerHTML = `<option value="">Error loading users</option>`;
+    }
+}
+
+async function createRole(btn) {
+    const name = document.getElementById('newRoleName').value.trim();
+    const desc = document.getElementById('newRoleDesc').value.trim();
+    if (!name) { alert('Enter a role name.'); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Creating…';
+    const result = document.getElementById('rolesResult');
+    try {
+        const resp = await fetch('/api/tcs/roles', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, description: desc }),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            if (result) {
+                result.innerHTML = `<div class="alert alert-success mb-3 py-2 small"><i class="bi bi-check-circle-fill me-2"></i><strong>${data.message}</strong></div>`;
+            }
+            document.getElementById('newRoleName').value = '';
+            document.getElementById('newRoleDesc').value = '';
+            loadRoles(true);
+        } else if (result) {
+            result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">${data.detail}</div>`;
+        }
+    } catch(err) {
+        if (result) result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">Error: ${err.message}</div>`;
+    } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Create Role';
+    }
+}
+
+async function deleteRole(roleId, roleName) {
+    if (!confirm(`Delete role "${roleName}" from Auth0?`)) return;
+    const result = document.getElementById('rolesResult');
+    try {
+        const resp = await fetch(`/api/tcs/roles/${roleId}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (result) {
+            result.innerHTML = `<div class="alert alert-${resp.ok ? 'success' : 'danger'} mb-3 py-2 small">${data.message || data.detail}</div>`;
+        }
+        if (resp.ok) loadRoles(true);
+    } catch(err) {
+        if (result) result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">Error: ${err.message}</div>`;
+    }
+}
+
+async function assignRole(btn) {
+    const userId = document.getElementById('assignUserId').value;
+    const roleId = document.getElementById('assignRoleId').value;
+    if (!userId || !roleId) { alert('Please select an organisation, user and role.'); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Assigning…';
+    const result = document.getElementById('rolesResult');
+    try {
+        const resp = await fetch('/api/tcs/roles/assign', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: userId, role_id: roleId }),
+        });
+        const data = await resp.json();
+        if (result) {
+            result.innerHTML = `<div class="alert alert-${resp.ok ? 'success' : 'danger'} mb-0 py-2 small">${resp.ok ? data.message : data.detail}</div>`;
+        }
+    } catch(err) {
+        if (result) result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">Error: ${err.message}</div>`;
+    } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>Assign Role';
+    }
+}
+
+async function createOrg(btn) {
+    const name = document.getElementById('newOrgName').value.trim();
+    const display = document.getElementById('newOrgDisplay').value.trim();
+    if (!name) { alert('Enter an organisation name.'); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Creating…';
+    const result = document.getElementById('orgMgmtResult');
+    try {
+        const resp = await fetch('/api/tcs/orgs', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, display_name: display }),
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            result.innerHTML = `<div class="alert alert-success mb-0 py-2 small"><i class="bi bi-check-circle-fill me-2"></i><strong>${data.message}</strong> — Auth0 ID: <code>${data.auth0_org_id}</code></div>`;
+            result.style.display = 'block';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">${data.detail || JSON.stringify(data)}</div>`;
+            result.style.display = 'block';
+        }
+    } catch(err) {
+        result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">Network error: ${err.message}</div>`;
+        result.style.display = 'block';
+    } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Create';
+    }
+}
+
+async function deleteOrg(btn) {
+    const orgId = document.getElementById('deleteOrgId').value;
+    if (!orgId) { alert('Select an organisation to delete.'); return; }
+    const orgName = document.getElementById('deleteOrgId').selectedOptions[0].text;
+    if (!confirm(`Delete "${orgName}"?\n\nThis will permanently remove it from Auth0 and the platform database.`)) return;
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Deleting…';
+    const result = document.getElementById('orgMgmtResult');
+    try {
+        const resp = await fetch(`/api/tcs/orgs/${orgId}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (resp.ok) {
+            result.innerHTML = `<div class="alert alert-success mb-0 py-2 small"><i class="bi bi-check-circle-fill me-2"></i>${data.message}</div>`;
+            result.style.display = 'block';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">${data.detail || JSON.stringify(data)}</div>`;
+            result.style.display = 'block';
+        }
+    } catch(err) {
+        result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">Network error: ${err.message}</div>`;
+        result.style.display = 'block';
+    } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-trash me-1"></i>Delete';
+    }
+}
+
+const inviteForm = document.getElementById('tcsInviteForm');
+if (inviteForm) {
+    inviteForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('tcsEmail').value;
+        const orgId = document.getElementById('tcsOrgId').value;
+        const result = document.getElementById('tcsInviteResult');
+        const btn = e.target.querySelector('button[type=submit]');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending…';
+        try {
+            const resp = await fetch('/api/admin/invite', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, org_id: orgId }),
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                result.innerHTML = `<div class="alert alert-success mb-0 py-2 small"><i class="bi bi-check-circle-fill me-2"></i><strong>Invitation sent to ${email}</strong></div>`;
+                document.getElementById('tcsEmail').value = '';
+            } else {
+                result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">${data.detail || JSON.stringify(data)}</div>`;
+            }
+            result.style.display = 'block';
+        } catch(err) {
+            result.innerHTML = `<div class="alert alert-danger mb-0 py-2 small">Network error: ${err.message}</div>`;
+            result.style.display = 'block';
+        } finally {
+            btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Send Invitation';
+        }
+    });
+}
+
+async function migrateAll(btn) {
+    if (!confirm('Send activation emails to ALL pending users across ALL organisations?')) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending…';
+    try {
+        const resp = await fetch('/api/tcs/migrate/all', { method: 'POST' });
+        const data = await resp.json();
+        const resultDiv = document.getElementById('migrateResult');
+        if (resp.ok && resultDiv) {
+            resultDiv.innerHTML = `<div class="alert alert-success"><h6 class="fw-bold"><i class="bi bi-check-circle-fill me-2"></i>${data.message}</h6><a href="/tcs/migration" class="btn btn-auth0-outline btn-sm mt-2">Refresh</a></div>`;
+            resultDiv.style.display = 'block';
+            btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>All emails sent';
+        } else {
+            btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Migrate All';
+        }
+    } catch (err) {
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Migrate All';
+        alert('Network error: ' + err.message);
+    }
+}
+
+async function migrateOrg(orgId, btn) {
+    btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending…';
+    try {
+        const resp = await fetch(`/api/tcs/migrate/org/${orgId}`, { method: 'POST' });
+        const data = await resp.json();
+        if (resp.ok) {
+            btn.outerHTML = `<span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle me-1"></i>${data.processed} sent</span>`;
+        } else {
+            btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Send emails';
+            alert(data.detail || JSON.stringify(data));
+        }
+    } catch (err) {
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Send emails';
+        alert('Network error: ' + err.message);
+    }
+}
+</script>

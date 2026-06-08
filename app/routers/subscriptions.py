@@ -35,7 +35,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
+from app.auth.oauth_helpers import resolve_callback_url, store_pkce_session
 from app.database import get_db
 from app.models import Organization, PermissionProfile, PlatformUser
 
@@ -186,10 +186,12 @@ async def subscription_dashboard(
         "subscription_dashboard.html",
         {
             "request": request,
+            "active_section": "subscriptions",
+            "auth0_domain": settings.auth0_domain,
+            "tcs_email": request.session.get("legacy_email", TCS_ADMIN_EMAIL),
             "org_data": org_data,
             "tier_features": TIER_FEATURES,
             "available_addons": AVAILABLE_ADDONS,
-            "tcs_email": TCS_ADMIN_EMAIL,
         },
     )
 
@@ -489,14 +491,7 @@ async def toggle_org_mfa(
 @router.get("/mfa/enroll", include_in_schema=False)
 async def mfa_enroll_redirect(request: Request) -> RedirectResponse:
     """Redirect the user to Auth0 login with MFA enforcement via PKCE."""
-    verifier = base64.urlsafe_b64encode(os.urandom(40)).rstrip(b"=").decode()
-    challenge = base64.urlsafe_b64encode(
-        hashlib.sha256(verifier.encode()).digest()
-    ).rstrip(b"=").decode()
-    state = base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode()
-
-    request.session["pkce_verifier"] = verifier
-    request.session["oauth_state"] = state
+    state, challenge, callback = store_pkce_session(request)
 
     # Map internal org_id → Auth0 org_id to bypass the org-prompt screen
     _org_map = {
@@ -510,7 +505,7 @@ async def mfa_enroll_redirect(request: Request) -> RedirectResponse:
     params: dict = {
         "response_type": "code",
         "client_id": settings.auth0_client_id,
-        "redirect_uri": settings.callback_url,
+        "redirect_uri": callback,
         "scope": "openid profile email",
         "state": state,
         "code_challenge": challenge,

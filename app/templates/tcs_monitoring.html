@@ -1,0 +1,28 @@
+{% extends "tcs_base.html" %}
+{% block title %}Logs{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Logs</h1>
+<p class="text-muted mb-4">Authentication and admin activity — who logged in, from where, and what changed.</p>
+
+<div class="tcs-stat-grid">
+    <div class="tcs-stat-card">
+        <div class="value text-success">{{ log_stats.last_24h_logins }}</div>
+        <div class="label">Success Logins (24h)</div>
+    </div>
+    <div class="tcs-stat-card">
+        <div class="value text-danger">{{ log_stats.last_24h_failed }}</div>
+        <div class="label">Failed Logins (24h)</div>
+    </div>
+    <div class="tcs-stat-card">
+        <div class="value">{{ log_stats.last_24h_signups }}</div>
+        <div class="label">Signups (24h)</div>
+    </div>
+    <div class="tcs-stat-card">
+        <div class="value">{{ log_total }}</div>
+        <div class="label">Total Stored Events</div>
+    </div>
+</div>
+
+{% include "tcs_logs_table.html" %}
+{% endblock %}

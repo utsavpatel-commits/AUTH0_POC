@@ -1,0 +1,93 @@
+{% extends "tcs_base.html" %}
+{% block title %}Organizations{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Organizations</h1>
+<p class="text-muted mb-4">Create and manage organisations in Auth0 and the platform database.</p>
+
+<div class="tcs-panel mb-4">
+    <div class="tcs-panel-header">Create Organisation</div>
+    <div class="tcs-panel-body">
+        <div class="row g-2">
+            <div class="col-md-5">
+                <input type="text" class="form-control" id="newOrgName" placeholder="Organisation name (e.g. Beta Corp)">
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="newOrgDisplay" placeholder="Display name (optional)">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-auth0 w-100" onclick="createOrg(this)">
+                    <i class="bi bi-plus-lg me-1"></i>Create
+                </button>
+            </div>
+        </div>
+        <div class="row g-2 mt-2">
+            <div class="col-md-4">
+                <select class="form-select" id="deleteOrgId">
+                    <option value="">Select org to delete…</option>
+                    {% for s in org_stats %}
+                    <option value="{{ s.org.id }}">{{ s.org.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-danger w-100" onclick="deleteOrg(this)">
+                    <i class="bi bi-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+        <div id="orgMgmtResult" class="mt-3" style="display:none;"></div>
+    </div>
+</div>
+
+<div class="tcs-panel">
+    <div class="tcs-panel-header">All Organisations</div>
+    <div class="table-responsive">
+        <table class="table tcs-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Organisation</th>
+                    <th>Auth0 Org ID</th>
+                    <th class="text-center">Users</th>
+                    <th class="text-center">Legacy</th>
+                    <th class="text-center">Migrated</th>
+                    <th class="text-center">Pending</th>
+                    <th>Progress</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in org_stats %}
+                <tr>
+                    <td class="ps-4 fw-semibold">{{ s.org.name }}</td>
+                    <td>
+                        {% if s.org.auth0_org_id %}
+                        <code class="small">{{ s.org.auth0_org_id }}</code>
+                        {% else %}
+                        <span class="badge bg-danger-subtle text-danger">not linked</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ s.total }}</td>
+                    <td class="text-center">{{ s.legacy_total }}</td>
+                    <td class="text-center text-success">{{ s.migrated }}</td>
+                    <td class="text-center">
+                        {% if s.pending > 0 %}<span class="badge bg-danger">{{ s.pending }}</span>{% else %}0{% endif %}
+                    </td>
+                    <td style="min-width:120px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:5px;">
+                                <div class="progress-bar bg-success" style="width:{{ s.pct }}%;"></div>
+                            </div>
+                            <small>{{ s.pct }}%</small>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% include "tcs_scripts.html" %}
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "tcs_base.html" %}
+{% block title %}Security{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Security</h1>
+<p class="text-muted mb-4">Configure security policies, MFA, and account recovery for your tenant.</p>
+
+<div class="tcs-next-grid mb-4">
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-shield-check"></i></div>
+        <h3>Multi-factor Authentication</h3>
+        <p>Configure TOTP, SMS, and Email OTP. Set org-level MFA required/optional policies.</p>
+        <div class="actions">
+            <a href="/mfa/setup" class="btn btn-auth0-outline">Setup MFA</a>
+            <a href="/subscription/dashboard" class="btn-auth0-link">Policies</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-arrow-repeat"></i></div>
+        <h3>Account Recovery</h3>
+        <p>Forgot password, resend verification, unlock blocked accounts via Auth0 Management API.</p>
+        <div class="actions">
+            <a href="/account-recovery" class="btn btn-auth0-outline">Configure</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-shield-lock"></i></div>
+        <h3>Permission Profiles</h3>
+        <p>viewer / member / analyst / admin profiles. Grant + exclusion model with per-user overrides.</p>
+        <div class="actions">
+            <a href="/permissions/org_acmecorp" class="btn btn-auth0-outline">Manage</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-key"></i></div>
+        <h3>Attack Protection</h3>
+        <p>Brute-force protection, suspicious IP throttling, and breached password detection (Auth0 managed).</p>
+        <div class="actions">
+            <span class="badge bg-success">Enabled by Auth0</span>
+        </div>
+    </div>
+</div>
+
+<div class="tcs-panel">
+    <div class="tcs-panel-header">MFA Policy by Organisation</div>
+    <div class="table-responsive">
+        <table class="table tcs-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Organisation</th>
+                    <th>MFA Required</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in org_stats %}
+                <tr>
+                    <td class="ps-4 fw-semibold">{{ s.org.name }}</td>
+                    <td>
+                        {% if s.org.mfa_required %}
+                        <span class="badge bg-warning text-dark">Required</span>
+                        {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary">Optional</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/subscription/dashboard" class="btn-auth0-link btn-sm">Edit in Subscriptions</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

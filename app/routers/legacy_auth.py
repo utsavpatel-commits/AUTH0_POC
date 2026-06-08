@@ -7,10 +7,7 @@ GET  /migrate-now   — trigger Auth0 migration for the logged-in legacy user
 """
 from __future__ import annotations
 from pathlib import Path
-import base64
-import hashlib
 import logging
-import os
 import urllib.parse
 
 import bcrypt
@@ -21,18 +18,24 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.oauth_helpers import store_pkce_session
 from app.config import settings
 from app.database import get_db
 from app.models import MigrationStatus, Organization, PlatformUser, UserStatus
+from app.services.activity_service import client_ip, client_user_agent, log_activity
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["legacy-auth"])
 templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templates"))
 
 
+TCS_ADMIN_EMAILS = {"utsav.patel@ignitedata.ai", "akash.bhandwalkar@ignitedata.ai"}
+
+
 @router.get("/legacy-login", response_class=HTMLResponse, include_in_schema=False)
 async def legacy_login_page(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("legacy_login.html", {"request": request, "error": None})
+    error = request.query_params.get("error")
+    return templates.TemplateResponse("legacy_login.html", {"request": request, "error": error})
 
 
 @router.post("/legacy-login", response_class=HTMLResponse, include_in_schema=False)
@@ -52,6 +55,18 @@ async def legacy_login_submit(
         or not bcrypt.checkpw(password.encode(), user.password_hash.encode())
         or user.status != UserStatus.ACTIVE
     ):
+        await log_activity(
+            db,
+            "auth.login.failed",
+            f"Failed login attempt for {email}",
+            category="auth",
+            actor_email=email,
+            severity="warn",
+            success=False,
+            connection="legacy",
+            ip_address=client_ip(request),
+            user_agent=client_user_agent(request),
+        )
         return templates.TemplateResponse(
             "legacy_login.html",
             {"request": request, "error": "Invalid email or password."},
@@ -66,33 +81,36 @@ async def legacy_login_submit(
 
     logger.info("Legacy login: %s (role=%s, org=%s)", email, user.role, user.org_id)
 
-    # TCS super-admin — no MFA step, goes straight to TCS dashboard
-    TCS_ADMIN_EMAILS = {"utsav.patel@ignitedata.ai", "akash.bhandwalkar@ignitedata.ai"}
-    if user.email in TCS_ADMIN_EMAILS:
-        return RedirectResponse(url="/tcs/dashboard", status_code=302)
-
-    # Check if org requires MFA
     org_result = await db.execute(select(Organization).where(Organization.id == user.org_id))
     org = org_result.scalars().first()
 
-    if org and org.mfa_required:
-        # Store where to redirect after MFA completes
-        dest = "/org/dashboard" if user.role == "admin" else "/legacy-dashboard"
+    await log_activity(
+        db,
+        "auth.legacy_login",
+        f"Successful login for {email}",
+        category="auth",
+        actor_email=email,
+        org_id=user.org_id,
+        org_name=org.name if org else None,
+        connection="legacy",
+        ip_address=client_ip(request),
+        user_agent=client_user_agent(request),
+        metadata={"role": user.role},
+    )
+
+    # Check if org requires MFA — skip for TCS super admins (direct dashboard access)
+    if org and org.mfa_required and user.email not in TCS_ADMIN_EMAILS:
+        dest = (
+            "/org/dashboard" if user.role == "admin" else "/legacy-dashboard"
+        )
         request.session["mfa_post_login_redirect"] = dest
 
-        # Build PKCE + MFA challenge redirect to Auth0
-        verifier = base64.urlsafe_b64encode(os.urandom(40)).rstrip(b"=").decode()
-        challenge = base64.urlsafe_b64encode(
-            hashlib.sha256(verifier.encode()).digest()
-        ).rstrip(b"=").decode()
-        state = base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode()
-        request.session["pkce_verifier"] = verifier
-        request.session["oauth_state"] = state
+        state, challenge, callback = store_pkce_session(request)
 
         params = {
             "response_type": "code",
             "client_id": settings.auth0_client_id,
-            "redirect_uri": settings.callback_url,
+            "redirect_uri": callback,
             "scope": "openid profile email",
             "state": state,
             "code_challenge": challenge,
@@ -108,7 +126,10 @@ async def legacy_login_submit(
         logger.info("MFA required for %s — redirecting to Auth0 MFA challenge", email)
         return RedirectResponse(url=auth_url, status_code=302)
 
-    # Org admins go to their org admin panel
+    # No MFA — TCS admin goes to TCS dashboard
+    if user.email in TCS_ADMIN_EMAILS:
+        return RedirectResponse(url="/tcs/dashboard", status_code=302)
+
     if user.role == "admin":
         return RedirectResponse(url="/org/dashboard", status_code=302)
     return RedirectResponse(url="/legacy-dashboard", status_code=302)
@@ -135,7 +156,18 @@ async def legacy_dashboard(
 
 
 @router.get("/legacy-logout", include_in_schema=False)
-async def legacy_logout(request: Request):
+async def legacy_logout(request: Request, db: AsyncSession = Depends(get_db)):
+    email = request.session.get("legacy_email")
+    if email:
+        await log_activity(
+            db,
+            "auth.logout",
+            f"{email} signed out",
+            category="auth",
+            actor_email=email,
+            connection="legacy",
+            ip_address=client_ip(request),
+        )
     request.session.clear()
     return RedirectResponse(url="/legacy-login", status_code=302)
 

@@ -1,0 +1,42 @@
+{% extends "tcs_base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">{{ page_title }}</h1>
+{% if page_description %}
+<p class="text-muted mb-4">{{ page_description }}</p>
+{% endif %}
+
+{% if panels %}
+    {% for panel in panels %}
+    <div class="tcs-panel mb-4">
+        <div class="tcs-panel-header">{{ panel.title }}</div>
+        <div class="tcs-panel-body">
+            {% if panel.html %}
+                {{ panel.html | safe }}
+            {% elif panel.text %}
+                <p class="mb-0 small text-muted">{{ panel.text }}</p>
+            {% endif %}
+            {% if panel.link %}
+            <a href="{{ panel.link.url }}" class="btn btn-auth0-outline btn-sm mt-3">{{ panel.link.label }}</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+{% if actions %}
+<div class="tcs-next-grid">
+    {% for action in actions %}
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-{{ action.icon }}"></i></div>
+        <h3>{{ action.title }}</h3>
+        <p>{{ action.text }}</p>
+        <div class="actions">
+            <a href="{{ action.url }}" class="btn btn-auth0-outline">{{ action.btn }}</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

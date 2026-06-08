@@ -221,6 +221,72 @@ class Approval(Base):
 
 
 # ---------------------------------------------------------------------------
+# Activity / Audit Logs — Auth0-style tenant activity
+# ---------------------------------------------------------------------------
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id = Column(String(64), primary_key=True, default=_uuid)
+    event_type = Column(String(64), nullable=False, index=True)
+    category = Column(String(32), nullable=False, default="auth")  # auth, user, org, migration, security
+    severity = Column(String(16), nullable=False, default="info")
+    actor_email = Column(String(255), nullable=True, index=True)
+    actor_sub = Column(String(255), nullable=True)
+    target_email = Column(String(255), nullable=True)
+    org_id = Column(String(64), nullable=True, index=True)
+    org_name = Column(String(255), nullable=True)
+    ip_address = Column(String(64), nullable=True)
+    user_agent = Column(String(512), nullable=True)
+    connection = Column(String(128), nullable=True)
+    description = Column(Text, nullable=False)
+    extra_data = Column(Text, nullable=True)  # JSON blob
+    success = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=_now, nullable=False, index=True)
+
+    def to_dict(self) -> dict:
+        extra = {}
+        if self.extra_data:
+            try:
+                extra = json.loads(self.extra_data)
+            except (json.JSONDecodeError, TypeError):
+                extra = {}
+        return {
+            "id": self.id,
+            "event_type": self.event_type,
+            "category": self.category,
+            "severity": self.severity,
+            "actor_email": self.actor_email,
+            "actor_sub": self.actor_sub,
+            "target_email": self.target_email,
+            "org_id": self.org_id,
+            "org_name": self.org_name,
+            "ip_address": self.ip_address,
+            "user_agent": self.user_agent,
+            "connection": self.connection,
+            "description": self.description,
+            "extra": extra,
+            "success": self.success,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+# ---------------------------------------------------------------------------
+# OTP Records — passwordless login codes
+# ---------------------------------------------------------------------------
+
+class OTPRecord(Base):
+    __tablename__ = "otp_records"
+
+    id = Column(String(64), primary_key=True, default=_uuid)
+    email = Column(String(255), nullable=False, index=True)
+    code = Column(String(6), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+# ---------------------------------------------------------------------------
 # Permission Profiles
 # ---------------------------------------------------------------------------
 

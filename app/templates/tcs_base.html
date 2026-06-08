@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TCS Admin{% endblock %} — TCS Identity Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --auth0-blue: #635dff;
+            --auth0-blue-hover: #4f46e5;
+            --auth0-blue-light: #e8e6ff;
+            --auth0-sidebar: #f7f8f9;
+            --auth0-border: #e3e5e8;
+            --auth0-text: #2d333a;
+            --auth0-muted: #6f7780;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #fff;
+            color: var(--auth0-text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-size: 14px;
+        }
+        .tcs-shell { display: flex; min-height: 100vh; }
+
+        /* Top bar */
+        .tcs-topbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 52px;
+            background: #fff;
+            border-bottom: 1px solid var(--auth0-border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 100;
+        }
+        .tcs-topbar-brand {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--auth0-text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tcs-topbar-brand i { color: var(--auth0-blue); }
+        .tcs-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+        .tcs-tenant-badge {
+            background: var(--auth0-sidebar);
+            border: 1px solid var(--auth0-border);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: var(--auth0-muted);
+        }
+
+        /* Sidebar */
+        .tcs-sidebar {
+            width: 240px;
+            min-width: 240px;
+            background: var(--auth0-sidebar);
+            border-right: 1px solid var(--auth0-border);
+            padding-top: 52px;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            overflow-y: auto;
+            z-index: 50;
+        }
+        .tcs-sidebar nav { padding: 12px 8px 80px; }
+        .tcs-nav-section {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--auth0-muted);
+            padding: 16px 12px 6px;
+        }
+        .tcs-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: var(--auth0-text);
+            text-decoration: none;
+            font-size: 13.5px;
+            transition: background .15s;
+        }
+        .tcs-nav-link:hover { background: #eceef0; color: var(--auth0-text); }
+        .tcs-nav-link.active {
+            background: var(--auth0-blue-light);
+            color: var(--auth0-blue);
+            font-weight: 600;
+        }
+        .tcs-nav-link i { font-size: 16px; width: 18px; text-align: center; opacity: .85; }
+        .tcs-nav-link .badge-new {
+            margin-left: auto;
+            background: var(--auth0-blue);
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+        .tcs-nav-group-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: var(--auth0-text);
+            text-decoration: none;
+            font-size: 13.5px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .tcs-nav-group-toggle:hover { background: #eceef0; }
+        .tcs-nav-group-toggle .chevron { margin-left: auto; font-size: 11px; transition: transform .2s; }
+        .tcs-nav-group-toggle.open .chevron { transform: rotate(90deg); }
+        .tcs-nav-sub { padding-left: 28px; display: none; }
+        .tcs-nav-sub.open { display: block; }
+        .tcs-nav-sub .tcs-nav-link { padding: 6px 12px; font-size: 13px; }
+        .tcs-sidebar-footer {
+            position: fixed;
+            bottom: 0; left: 0;
+            width: 240px;
+            padding: 12px;
+            background: var(--auth0-sidebar);
+            border-top: 1px solid var(--auth0-border);
+            border-right: 1px solid var(--auth0-border);
+        }
+        .tcs-sidebar-footer a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--auth0-muted);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 6px 8px;
+        }
+        .tcs-sidebar-footer a:hover { color: var(--auth0-text); }
+
+        /* Main content */
+        .tcs-main {
+            margin-left: 240px;
+            margin-top: 52px;
+            flex: 1;
+            min-height: calc(100vh - 52px);
+            background: #fff;
+        }
+        .tcs-content { padding: 32px 40px 48px; max-width: 1100px; }
+
+        /* Auth0-style components */
+        .tcs-info-banner {
+            background: #f0f4ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13.5px;
+        }
+        .tcs-info-banner i { color: var(--auth0-blue); margin-top: 2px; }
+        .tcs-info-banner a { color: var(--auth0-blue); font-weight: 600; }
+
+        .tcs-page-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 24px;
+            color: var(--auth0-text);
+        }
+        .tcs-section-title {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+        }
+
+        .tcs-hero-card {
+            border: 1px solid var(--auth0-border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #fafbff 0%, #f0f4ff 100%);
+            margin-bottom: 32px;
+        }
+        .tcs-hero-card .hero-body {
+            display: flex;
+            align-items: center;
+            padding: 32px 36px;
+            gap: 32px;
+        }
+        .tcs-hero-card h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .tcs-hero-card p { color: var(--auth0-muted); margin-bottom: 16px; font-size: 14px; }
+        .tcs-hero-icons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .tcs-hero-icons span {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: #fff;
+            border: 1px solid var(--auth0-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .tcs-next-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .tcs-next-card {
+            border: 1px solid var(--auth0-border);
+            border-radius: 10px;
+            padding: 20px;
+            background: #fff;
+            transition: box-shadow .2s;
+        }
+        .tcs-next-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+        .tcs-next-card .icon-box {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            background: var(--auth0-blue-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--auth0-blue);
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+        .tcs-next-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+        .tcs-next-card p { font-size: 13px; color: var(--auth0-muted); margin-bottom: 14px; line-height: 1.5; }
+        .tcs-next-card .actions { display: flex; gap: 12px; align-items: center; }
+
+        .btn-auth0 {
+            background: var(--auth0-blue);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        .btn-auth0:hover { background: var(--auth0-blue-hover); color: #fff; }
+        .btn-auth0-outline {
+            background: #fff;
+            border: 1px solid var(--auth0-border);
+            color: var(--auth0-text);
+            font-weight: 600;
+            font-size: 13px;
+            padding: 7px 16px;
+            border-radius: 6px;
+        }
+        .btn-auth0-outline:hover { background: var(--auth0-sidebar); color: var(--auth0-text); }
+        .btn-auth0-link {
+            background: none;
+            border: none;
+            color: var(--auth0-blue);
+            font-weight: 600;
+            font-size: 13px;
+            padding: 0;
+            text-decoration: none;
+        }
+        .btn-auth0-link:hover { text-decoration: underline; color: var(--auth0-blue-hover); }
+
+        .tcs-panel {
+            border: 1px solid var(--auth0-border);
+            border-radius: 10px;
+            background: #fff;
+            margin-bottom: 20px;
+        }
+        .tcs-panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--auth0-border);
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .tcs-panel-body { padding: 20px; }
+        .tcs-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 900px) {
+            .tcs-stat-grid { grid-template-columns: repeat(2, 1fr); }
+            .tcs-sidebar { width: 200px; min-width: 200px; }
+            .tcs-main { margin-left: 200px; }
+            .tcs-sidebar-footer { width: 200px; }
+        }
+        .tcs-stat-card {
+            border: 1px solid var(--auth0-border);
+            border-radius: 10px;
+            padding: 16px 20px;
+        }
+        .tcs-stat-card .value { font-size: 28px; font-weight: 700; line-height: 1; }
+        .tcs-sidebar.collapsed { width: 0; min-width: 0; overflow: hidden; }
+        .tcs-main.expanded { margin-left: 0; }
+
+        .form-control, .form-select {
+            border-radius: 6px;
+            border-color: var(--auth0-border);
+            font-size: 13px;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--auth0-blue);
+            box-shadow: 0 0 0 3px rgba(99,93,255,.15);
+        }
+        table.tcs-table { font-size: 13px; }
+        table.tcs-table thead th {
+            background: var(--auth0-sidebar);
+            border-bottom: 1px solid var(--auth0-border);
+            font-weight: 600;
+            color: var(--auth0-muted);
+            font-size: 12px;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+<div class="tcs-shell">
+    <!-- Top bar -->
+    <header class="tcs-topbar">
+        <a href="/tcs/dashboard" class="tcs-topbar-brand">
+            <i class="bi bi-shield-lock-fill"></i>
+            TCS Identity Platform
+        </a>
+        <div class="tcs-topbar-right">
+            <span class="tcs-tenant-badge">
+                <i class="bi bi-globe2 me-1"></i>{{ auth0_domain }}
+            </span>
+            <span class="text-muted small">{{ tcs_email }}</span>
+            <a href="/legacy-logout" class="btn btn-auth0-outline btn-sm">Sign out</a>
+        </div>
+    </header>
+
+    <!-- Sidebar — mirrors Auth0 Dashboard navigation -->
+    <aside class="tcs-sidebar">
+        <nav>
+            <!-- AI Agents -->
+            <a href="/tcs/ai-agents" class="tcs-nav-link {% if active_section == 'ai_agents' %}active{% endif %}">
+                <i class="bi bi-stars"></i> AI Agents
+                <span class="badge-new">NEW</span>
+            </a>
+
+            <!-- Activity -->
+            <a href="/tcs/activity" class="tcs-nav-link {% if active_section == 'activity' %}active{% endif %}">
+                <i class="bi bi-activity"></i> Activity
+            </a>
+
+            <!-- Applications -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['applications','apis','sso'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-app"></i> Applications
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['applications','apis','sso'] %}open{% endif %}">
+                <a href="/tcs/applications" class="tcs-nav-link {% if active_section == 'applications' %}active{% endif %}">Applications</a>
+                <a href="/tcs/apis" class="tcs-nav-link {% if active_section == 'apis' %}active{% endif %}">APIs</a>
+                <a href="/tcs/sso" class="tcs-nav-link {% if active_section == 'sso' %}active{% endif %}">SSO Integrations</a>
+            </div>
+
+            <!-- Authentication -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['auth_database','auth_social','auth_passwordless','auth_enterprise','authentication'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-fingerprint"></i> Authentication
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['auth_database','auth_social','auth_passwordless','auth_enterprise','authentication'] %}open{% endif %}">
+                <a href="/tcs/auth/database" class="tcs-nav-link {% if active_section == 'auth_database' %}active{% endif %}">Database</a>
+                <a href="/tcs/auth/social" class="tcs-nav-link {% if active_section == 'auth_social' %}active{% endif %}">Social</a>
+                <a href="/tcs/auth/passwordless" class="tcs-nav-link {% if active_section == 'auth_passwordless' %}active{% endif %}">Passwordless</a>
+                <a href="/tcs/auth/enterprise" class="tcs-nav-link {% if active_section == 'auth_enterprise' %}active{% endif %}">Enterprise</a>
+            </div>
+
+            <!-- Organizations -->
+            <a href="/tcs/organizations" class="tcs-nav-link {% if active_section == 'organizations' %}active{% endif %}">
+                <i class="bi bi-buildings"></i> Organizations
+            </a>
+
+            <!-- User Management -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['users','roles','migration'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-people"></i> User Management
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['users','roles','migration'] %}open{% endif %}">
+                <a href="/tcs/users" class="tcs-nav-link {% if active_section == 'users' %}active{% endif %}">Users</a>
+                <a href="/tcs/roles" class="tcs-nav-link {% if active_section == 'roles' %}active{% endif %}">Roles</a>
+                <a href="/tcs/migration" class="tcs-nav-link {% if active_section == 'migration' %}active{% endif %}">User Migration</a>
+            </div>
+
+            <!-- Branding -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['branding','email_templates'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-palette"></i> Branding
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['branding','email_templates'] %}open{% endif %}">
+                <a href="/tcs/branding" class="tcs-nav-link {% if active_section == 'branding' %}active{% endif %}">Universal Login</a>
+                <a href="/tcs/branding/email" class="tcs-nav-link {% if active_section == 'email_templates' %}active{% endif %}">Email Templates</a>
+            </div>
+
+            <!-- Security -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['security','mfa','attack_protection','permissions'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-shield-check"></i> Security
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['security','mfa','attack_protection','permissions'] %}open{% endif %}">
+                <a href="/tcs/security" class="tcs-nav-link {% if active_section == 'security' %}active{% endif %}">Security Center</a>
+                <a href="/mfa/setup" class="tcs-nav-link {% if active_section == 'mfa' %}active{% endif %}">Multi-factor Auth</a>
+                <a href="/tcs/security/attack-protection" class="tcs-nav-link {% if active_section == 'attack_protection' %}active{% endif %}">Attack Protection</a>
+                <a href="/permissions/org_acmecorp" class="tcs-nav-link {% if active_section == 'permissions' %}active{% endif %}">Permission Profiles</a>
+            </div>
+
+            <!-- Actions -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['actions','action_forms','action_library'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-lightning"></i> Actions
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['actions','action_forms','action_library'] %}open{% endif %}">
+                <a href="/tcs/actions" class="tcs-nav-link {% if active_section == 'actions' %}active{% endif %}">Triggers</a>
+                <a href="/tcs/actions/forms" class="tcs-nav-link {% if active_section == 'action_forms' %}active{% endif %}">Forms</a>
+                <a href="/tcs/actions/library" class="tcs-nav-link {% if active_section == 'action_library' %}active{% endif %}">Library</a>
+            </div>
+
+            <!-- Auth Pipeline -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['pipeline_rules','pipeline_hooks','architecture'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-diagram-3"></i> Auth Pipeline
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['pipeline_rules','pipeline_hooks','architecture'] %}open{% endif %}">
+                <a href="/tcs/pipeline/rules" class="tcs-nav-link {% if active_section == 'pipeline_rules' %}active{% endif %}">Rules</a>
+                <a href="/tcs/pipeline/hooks" class="tcs-nav-link {% if active_section == 'pipeline_hooks' %}active{% endif %}">Hooks</a>
+                <a href="/architecture" class="tcs-nav-link {% if active_section == 'architecture' %}active{% endif %}">Architecture</a>
+            </div>
+
+            <!-- Event Streams -->
+            <a href="/tcs/event-streams" class="tcs-nav-link {% if active_section == 'event_streams' %}active{% endif %}">
+                <i class="bi bi-broadcast"></i> Event Streams
+            </a>
+
+            <!-- Monitoring -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['monitoring','monitoring_streams'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-graph-up"></i> Monitoring
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['monitoring','monitoring_streams'] %}open{% endif %}">
+                <a href="/tcs/monitoring" class="tcs-nav-link {% if active_section == 'monitoring' %}active{% endif %}">Logs</a>
+                <a href="/tcs/monitoring/streams" class="tcs-nav-link {% if active_section == 'monitoring_streams' %}active{% endif %}">Streams</a>
+            </div>
+
+            <!-- Marketplace -->
+            <a href="/tcs/marketplace" class="tcs-nav-link {% if active_section == 'marketplace' %}active{% endif %}">
+                <i class="bi bi-shop"></i> Marketplace
+            </a>
+
+            <!-- Extensions -->
+            <a href="/tcs/extensions" class="tcs-nav-link {% if active_section == 'extensions' %}active{% endif %}">
+                <i class="bi bi-puzzle"></i> Extensions
+            </a>
+
+            <!-- Settings -->
+            <button type="button" class="tcs-nav-group-toggle {% if active_section in ['settings','subscriptions','account_recovery','documents'] %}open{% endif %}"
+                    onclick="toggleNavGroup(this)">
+                <i class="bi bi-gear"></i> Settings
+                <i class="bi bi-chevron-right chevron"></i>
+            </button>
+            <div class="tcs-nav-sub {% if active_section in ['settings','subscriptions','account_recovery','documents'] %}open{% endif %}">
+                <a href="/tcs/settings" class="tcs-nav-link {% if active_section == 'settings' %}active{% endif %}">General</a>
+                <a href="/subscription/dashboard" class="tcs-nav-link {% if active_section == 'subscriptions' %}active{% endif %}">Subscriptions</a>
+                <a href="/account-recovery" class="tcs-nav-link {% if active_section == 'account_recovery' %}active{% endif %}">Account Recovery</a>
+                <a href="/documents" class="tcs-nav-link {% if active_section == 'documents' %}active{% endif %}">Document Access</a>
+            </div>
+        </nav>
+        <div class="tcs-sidebar-footer">
+            <a href="https://auth0.com/docs" target="_blank"><i class="bi bi-question-circle"></i> Get support</a>
+            <a href="#" onclick="toggleSidebar();return false;"><i class="bi bi-chevron-double-left"></i> Collapse</a>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="tcs-main">
+        <div class="tcs-content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleNavGroup(btn) {
+    btn.classList.toggle('open');
+    const sub = btn.nextElementSibling;
+    if (sub && sub.classList.contains('tcs-nav-sub')) sub.classList.toggle('open');
+}
+function toggleSidebar() {
+    document.querySelector('.tcs-sidebar').classList.toggle('collapsed');
+    document.querySelector('.tcs-main').classList.toggle('expanded');
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

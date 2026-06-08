@@ -1,0 +1,75 @@
+{% extends "tcs_base.html" %}
+{% block title %}Roles{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Roles</h1>
+<p class="text-muted mb-4">Create and assign roles directly in Auth0 from this dashboard.</p>
+
+<div class="tcs-panel mb-4">
+    <div class="tcs-panel-header">Create Role</div>
+    <div class="tcs-panel-body">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="newRoleName" placeholder="Role name (e.g. analyst)">
+            </div>
+            <div class="col-md-5">
+                <input type="text" class="form-control" id="newRoleDesc" placeholder="Description (optional)">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-auth0 w-100" onclick="createRole(this)">
+                    <i class="bi bi-plus-lg me-1"></i>Create Role
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="tcs-panel mb-4">
+    <div class="tcs-panel-header">Assign Role to User</div>
+    <div class="tcs-panel-body">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Organisation</label>
+                <select class="form-select" id="assignOrgId" onchange="loadOrgUsers(this.value)">
+                    <option value="">Choose org…</option>
+                    {% for s in org_stats %}
+                    <option value="{{ s.org.id }}">{{ s.org.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">User</label>
+                <select class="form-select" id="assignUserId">
+                    <option value="">Select org first…</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Role</label>
+                <select class="form-select" id="assignRoleId">
+                    <option value="">Loading roles…</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-auth0 w-100" onclick="assignRole(this)">
+                    <i class="bi bi-check2-circle me-1"></i>Assign Role
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="tcs-panel">
+    <div class="tcs-panel-header d-flex justify-content-between align-items-center">
+        <span>All Roles in Auth0</span>
+        <button class="btn btn-auth0-outline btn-sm" onclick="loadRoles(true)">Refresh</button>
+    </div>
+    <div class="tcs-panel-body" id="rolesResult">
+        <p class="text-muted small mb-0">Loading roles…</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% include "tcs_scripts.html" %}
+<script>document.addEventListener('DOMContentLoaded', () => loadRoles(true));</script>
+{% endblock %}

@@ -10,10 +10,7 @@ exposed in the browser — only the server-side callback handles it.
 """
 from __future__ import annotations
 
-import base64
-import hashlib
 import logging
-import os
 import urllib.parse
 from typing import Optional
 
@@ -23,32 +20,14 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.jwt_validator import validate_token
+from app.auth.oauth_helpers import resolve_pkce_from_callback, store_pkce_session
 from app.config import settings
 from app.database import get_db
 from app.models import PlatformUser, UserStatus
+from app.services.activity_service import client_ip, client_user_agent, log_activity
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
-
-
-# ---------------------------------------------------------------------------
-# PKCE helpers
-# ---------------------------------------------------------------------------
-
-def _generate_code_verifier() -> str:
-    """Generate a cryptographically random code verifier (43–128 chars, URL-safe)."""
-    return base64.urlsafe_b64encode(os.urandom(40)).rstrip(b"=").decode("ascii")
-
-
-def _generate_code_challenge(verifier: str) -> str:
-    """Derive S256 code challenge from verifier."""
-    digest = hashlib.sha256(verifier.encode("ascii")).digest()
-    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
-
-
-def _generate_state() -> str:
-    return base64.urlsafe_b64encode(os.urandom(16)).rstrip(b"=").decode("ascii")
 
 
 # ---------------------------------------------------------------------------
@@ -70,12 +49,7 @@ async def login(
     When called from an invitation link, Auth0 appends ?invitation=...&organization=...
     These must be forwarded to Auth0's /authorize so it shows the password-setting UI.
     """
-    verifier = _generate_code_verifier()
-    challenge = _generate_code_challenge(verifier)
-    state = _generate_state()
-
-    request.session["pkce_verifier"] = verifier
-    request.session["oauth_state"] = state
+    state, challenge, callback = store_pkce_session(request)
 
     # organization can come from ?org_id= (our param) or ?organization= (Auth0 invitation link)
     effective_org = organization or org_id
@@ -83,7 +57,7 @@ async def login(
     params = {
         "response_type": "code",
         "client_id": settings.auth0_client_id,
-        "redirect_uri": settings.callback_url,
+        "redirect_uri": callback,
         "scope": "openid profile email",
         "state": state,
         "code_challenge": challenge,
@@ -137,14 +111,17 @@ async def callback(
     if not code:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing authorization code.")
 
-    # CSRF check
-    session_state = request.session.get("oauth_state")
-    if not session_state or session_state != state:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid state parameter (CSRF check failed).")
-
-    verifier = request.session.get("pkce_verifier")
-    if not verifier:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing PKCE verifier in session.")
+    verifier, redirect_uri = resolve_pkce_from_callback(request, state)
+    if not verifier or not redirect_uri:
+        logger.warning(
+            "OAuth state recovery failed — query_state=%s host=%s",
+            state[:40] + "..." if state and len(state) > 40 else state,
+            request.headers.get("host"),
+        )
+        return RedirectResponse(
+            url="/tcs/login?error=Your+login+session+expired.+Please+sign+in+again.",
+            status_code=302,
+        )
 
     # Exchange code for tokens
     async with httpx.AsyncClient(timeout=15) as client:
@@ -155,7 +132,7 @@ async def callback(
                 "client_id": settings.auth0_client_id,
                 "client_secret": settings.auth0_client_secret,
                 "code": code,
-                "redirect_uri": settings.callback_url,
+                "redirect_uri": redirect_uri,
                 "code_verifier": verifier,
             },
         )
@@ -222,6 +199,7 @@ async def callback(
     # Clean up session temp keys
     request.session.pop("pkce_verifier", None)
     request.session.pop("oauth_state", None)
+    request.session.pop("oauth_redirect_uri", None)
 
     if platform_user is None:
         # Unknown user — store minimal info in session and redirect to a pending page
@@ -240,6 +218,25 @@ async def callback(
     request.session["platform_user_id"] = platform_user.id
 
     logger.info("User %s (%s) logged in successfully. Status: %s", platform_user.id, email, platform_user.status)
+
+    from sqlalchemy import select as sa_select
+    from app.models import Organization
+    org_r = await db.execute(sa_select(Organization).where(Organization.id == platform_user.org_id))
+    org = org_r.scalar_one_or_none()
+    connection = request.query_params.get("connection", "oauth")
+    await log_activity(
+        db,
+        "auth.oauth_login",
+        f"Successful login for {email or platform_user.email}",
+        category="auth",
+        actor_email=email or platform_user.email,
+        actor_sub=sub,
+        org_id=platform_user.org_id,
+        org_name=org.name if org else None,
+        connection=connection,
+        ip_address=client_ip(request),
+        user_agent=client_user_agent(request),
+    )
 
     # If this was an MFA challenge triggered after legacy login, go back to the original destination
     mfa_redirect = request.session.pop("mfa_post_login_redirect", None)

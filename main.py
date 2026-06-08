@@ -32,7 +32,7 @@ from app.config import settings
 from app.database import AsyncSessionLocal, create_tables, get_db, seed_data
 from app.models import Organization, PlatformUser
 from app.routers import admin, approvals, auth, me, webhooks
-from app.routers import legacy_auth, migration, tcs_admin, subscriptions
+from app.routers import legacy_auth, migration, tcs_admin, subscriptions, otp_auth
 from app.routers import platform as platform_router
 
 # ---------------------------------------------------------------------------
@@ -147,13 +147,14 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 
 # Session middleware — used for PKCE flow (stores code_verifier, user_sub)
+# https_only=False so cookies work on http://localhost even when APP_BASE_URL is ngrok
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.secret_key,
     session_cookie="ignite_session",
     max_age=3600 * 8,  # 8 hours
     same_site="lax",
-    https_only=settings.app_base_url.startswith("https://"),
+    https_only=False,
 )
 
 # CORS — adjust origins for production
@@ -187,6 +188,7 @@ app.include_router(migration.router)    # /api/migrate/...
 app.include_router(tcs_admin.router)    # /tcs/dashboard, /api/tcs/migrate/...
 app.include_router(subscriptions.router)  # /subscription/dashboard, /permissions/..., /mfa/...
 app.include_router(platform_router.router)  # /architecture, /account-recovery, /documents, /api/account/...
+app.include_router(otp_auth.router)         # /api/otp/request, /api/otp/verify
 
 
 # ---------------------------------------------------------------------------

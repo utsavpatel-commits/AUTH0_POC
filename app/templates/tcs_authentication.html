@@ -1,0 +1,70 @@
+{% extends "tcs_base.html" %}
+{% block title %}Authentication{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Authentication</h1>
+<p class="text-muted mb-4">Configure authentication methods and connections for your tenant.</p>
+
+<div class="tcs-next-grid mb-4">
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-database"></i></div>
+        <h3>Database Connection</h3>
+        <p>Username-Password-Authentication enabled for all organisations. Users set passwords via Auth0.</p>
+        <div class="actions">
+            <span class="badge bg-success">Enabled</span>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-google"></i></div>
+        <h3>Social Connections</h3>
+        <p>Google, Microsoft, GitHub OAuth connections. Auth0 normalises identity from any provider.</p>
+        <div class="actions">
+            <a href="/social-login" class="btn btn-auth0-outline">Configure</a>
+            <a href="/social-login" class="btn-auth0-link">Try It Out</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-shield-check"></i></div>
+        <h3>Multi-factor Authentication</h3>
+        <p>TOTP, SMS OTP, Email OTP. Org-level required/optional policy via subscription dashboard.</p>
+        <div class="actions">
+            <a href="/mfa/setup" class="btn btn-auth0-outline">Setup MFA</a>
+            <a href="/subscription/dashboard" class="btn-auth0-link">Policies</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-envelope-at"></i></div>
+        <h3>OTP Authentication</h3>
+        <p>Passwordless email OTP login flow. Request and verify one-time codes via Auth0.</p>
+        <div class="actions">
+            <a href="/tcs/login" class="btn btn-auth0-outline">Try OTP Login</a>
+        </div>
+    </div>
+</div>
+
+<div class="tcs-panel">
+    <div class="tcs-panel-header">Enabled Connections per Organisation</div>
+    <div class="table-responsive">
+        <table class="table tcs-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Organisation</th>
+                    <th>Auth0 Org ID</th>
+                    <th>Database</th>
+                    <th>Social</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in org_stats %}
+                <tr>
+                    <td class="ps-4 fw-semibold">{{ s.org.name }}</td>
+                    <td><code class="small">{{ s.org.auth0_org_id or '—' }}</code></td>
+                    <td><span class="badge bg-success-subtle text-success">Enabled</span></td>
+                    <td><span class="badge bg-success-subtle text-success">Enabled</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

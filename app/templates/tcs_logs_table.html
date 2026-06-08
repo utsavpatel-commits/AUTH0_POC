@@ -1,0 +1,92 @@
+{# Shared Auth0-style logs table — include with `logs` and optional `show_filters` #}
+{% macro log_type_badge(log) %}
+    {% if log.success %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle">{{ log.type_label }}</span>
+    {% else %}
+        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ log.type_label }}</span>
+    {% endif %}
+{% endmacro %}
+
+<style>
+.log-table td { vertical-align: middle; }
+.log-date { white-space: nowrap; font-size: 12px; color: var(--auth0-muted); }
+.log-desc { font-size: 13px; }
+.log-meta { font-size: 11px; color: var(--auth0-muted); }
+.log-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.log-filters select, .log-filters input { max-width: 200px; font-size: 13px; }
+</style>
+
+{% if show_filters %}
+<form method="get" class="log-filters">
+    <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All categories</option>
+        {% for cat in ['auth','user','org','migration','security'] %}
+        <option value="{{ cat }}" {% if filter_category == cat %}selected{% endif %}>{{ cat | title }}</option>
+        {% endfor %}
+    </select>
+    <select name="event_type" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All event types</option>
+        {% for et in event_types %}
+        <option value="{{ et }}" {% if filter_event_type == et %}selected{% endif %}>{{ et }}</option>
+        {% endfor %}
+    </select>
+    <input type="text" name="email" class="form-control form-control-sm" placeholder="Filter by email…"
+           value="{{ filter_email or '' }}">
+    <button type="submit" class="btn btn-auth0-outline btn-sm">Filter</button>
+    <a href="{{ clear_url or '?' }}" class="btn btn-auth0-outline btn-sm">Clear</a>
+</form>
+{% endif %}
+
+<div class="tcs-panel">
+    <div class="tcs-panel-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-journal-text me-2"></i>Logs {% if log_total %}<span class="text-muted fw-normal">({{ log_total }} events)</span>{% endif %}</span>
+        {% if refresh_url %}
+        <a href="{{ refresh_url }}" class="btn btn-auth0-outline btn-sm"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</a>
+        {% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table tcs-table log-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width:160px">Date</th>
+                    <th style="width:140px">Type</th>
+                    <th>Description</th>
+                    <th style="width:120px">Connection</th>
+                    <th style="width:110px">IP</th>
+                    <th class="pe-4" style="width:180px">User</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if logs %}
+                {% for log in logs %}
+                <tr>
+                    <td class="ps-4 log-date">{{ log.date_display }}</td>
+                    <td>{{ log_type_badge(log) }}</td>
+                    <td>
+                        <div class="log-desc">{{ log.description }}</div>
+                        {% if log.org_name %}
+                        <div class="log-meta"><i class="bi bi-building me-1"></i>{{ log.org_name }}</div>
+                        {% endif %}
+                    </td>
+                    <td><code class="small">{{ log.connection or '—' }}</code></td>
+                    <td class="log-meta">{{ log.ip_address or '—' }}</td>
+                    <td class="pe-4">
+                        <div class="small fw-semibold">{{ log.actor_email or '—' }}</div>
+                        {% if log.target_email and log.target_email != log.actor_email %}
+                        <div class="log-meta">→ {{ log.target_email }}</div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                        No logs yet. Log in or perform actions to see activity here.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>

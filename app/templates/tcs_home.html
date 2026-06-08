@@ -1,0 +1,97 @@
+{% extends "tcs_base.html" %}
+{% block title %}Getting Started{% endblock %}
+
+{% block content %}
+<div class="tcs-info-banner">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+        New to TCS Identity Platform? Try our onboarding guide to get started.
+        <a href="/architecture">Start the guide</a>
+    </div>
+</div>
+
+<h1 class="tcs-page-title">Start Building</h1>
+
+<div class="tcs-hero-card">
+    <div class="hero-body">
+        <div class="flex-grow-1">
+            <h2>Integrate Auth0 into your application</h2>
+            <p>Integrate Auth0 into your application or use one of our samples to get started in minutes. Manage organisations, users, roles, and migration from this console.</p>
+            <div class="d-flex gap-2 align-items-center">
+                <a href="/tcs/organizations" class="btn btn-auth0">Create Organisation</a>
+                <a href="/architecture" class="btn-auth0-link">Learn More</a>
+            </div>
+        </div>
+        <div class="tcs-hero-icons">
+            <span title="React"><i class="bi bi-braces"></i></span>
+            <span title="Node"><i class="bi bi-node-plus"></i></span>
+            <span title="Python"><i class="bi bi-filetype-py"></i></span>
+            <span title="Angular"><i class="bi bi-triangle"></i></span>
+            <span title="Java"><i class="bi bi-cup-hot"></i></span>
+            <span title="Go"><i class="bi bi-lightning"></i></span>
+        </div>
+    </div>
+</div>
+
+<h2 class="tcs-section-title">Next Steps</h2>
+<div class="tcs-next-grid">
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-people"></i></div>
+        <h3>Invite Members</h3>
+        <p>Add additional admins to help with your integration and act as a backup on your account in case you lose access.</p>
+        <div class="actions">
+            <a href="/tcs/users" class="btn btn-auth0-outline">Invite</a>
+            <a href="/tcs/users" class="btn-auth0-link">Learn More</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-box-arrow-in-right"></i></div>
+        <h3>Login Box</h3>
+        <p>Customize your login box to match your brand identity and try it out to see how it works.</p>
+        <div class="actions">
+            <a href="/tcs/branding" class="btn btn-auth0-outline">Customize</a>
+            <a href="/tcs/login" class="btn-auth0-link"><i class="bi bi-play-fill me-1"></i>Try It Out</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-buildings"></i></div>
+        <h3>Organizations</h3>
+        <p>Create and manage multi-tenant organisations. Each org gets its own Auth0 org ID and user pool.</p>
+        <div class="actions">
+            <a href="/tcs/organizations" class="btn btn-auth0-outline">Manage</a>
+            <a href="/tcs/organizations" class="btn-auth0-link">View all ({{ org_stats|length }})</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-arrow-left-right"></i></div>
+        <h3>User Migration</h3>
+        <p>Migrate legacy users to Auth0. Send activation emails and track progress across all organisations.</p>
+        <div class="actions">
+            <a href="/tcs/migration" class="btn btn-auth0-outline">Migrate</a>
+            {% if total_pending > 0 %}
+            <span class="badge bg-warning text-dark">{{ total_pending }} pending</span>
+            {% else %}
+            <span class="badge bg-success">All done</span>
+            {% endif %}
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-shield-check"></i></div>
+        <h3>Security</h3>
+        <p>Configure MFA policies, account recovery, and security settings for your tenant.</p>
+        <div class="actions">
+            <a href="/tcs/security" class="btn btn-auth0-outline">Configure</a>
+            <a href="/mfa/setup" class="btn-auth0-link">MFA Setup</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-app"></i></div>
+        <h3>Applications</h3>
+        <p>Set up OAuth 2.0 / OIDC applications. Enable social login with Google, Microsoft, or GitHub.</p>
+        <div class="actions">
+            <a href="/tcs/applications" class="btn btn-auth0-outline">View Apps</a>
+            <a href="/social-login" class="btn-auth0-link">Try Social Login</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
-from app.models import Base, MigrationStatus, Organization, PermissionProfile, PlatformUser, UserStatus
+from app.models import ActivityLog, Base, MigrationStatus, Organization, PermissionProfile, PlatformUser, UserStatus
 
 logger = logging.getLogger(__name__)
 
@@ -238,5 +238,72 @@ async def seed_data() -> None:
                     logger.info("Seeded permission profile: %s for org %s", spec["name"], org_id)
                 else:
                     logger.info("Permission profile already seeded: %s for org %s", spec["name"], org_id)
+
+        # Seed sample activity logs if table is empty
+        log_count = await session.execute(select(ActivityLog).limit(1))
+        if log_count.scalars().first() is None:
+            from datetime import timedelta
+            now = datetime.now(timezone.utc)
+            samples = [
+                ActivityLog(
+                    event_type="auth.legacy_login",
+                    category="auth",
+                    actor_email="utsav.patel@ignitedata.ai",
+                    org_id="org_acmecorp",
+                    org_name="Acme Corp",
+                    connection="legacy",
+                    description="Successful login for utsav.patel@ignitedata.ai",
+                    ip_address="127.0.0.1",
+                    success=True,
+                    created_at=now - timedelta(minutes=5),
+                ),
+                ActivityLog(
+                    event_type="auth.oauth_login",
+                    category="auth",
+                    actor_email="utsavpatel8696@gmail.com",
+                    org_id="org_acmecorp",
+                    org_name="Acme Corp",
+                    connection="google-oauth2",
+                    description="Successful login for utsavpatel8696@gmail.com",
+                    ip_address="192.168.1.10",
+                    success=True,
+                    created_at=now - timedelta(hours=2),
+                ),
+                ActivityLog(
+                    event_type="user.invited",
+                    category="user",
+                    actor_email="utsav.patel@ignitedata.ai",
+                    target_email="new.user@acmecorp.com",
+                    org_id="org_acmecorp",
+                    org_name="Acme Corp",
+                    description="Invitation sent to new.user@acmecorp.com",
+                    success=True,
+                    created_at=now - timedelta(hours=5),
+                ),
+                ActivityLog(
+                    event_type="auth.login.failed",
+                    category="auth",
+                    actor_email="unknown@example.com",
+                    connection="legacy",
+                    description="Failed login attempt for unknown@example.com",
+                    severity="warn",
+                    success=False,
+                    created_at=now - timedelta(hours=8),
+                ),
+                ActivityLog(
+                    event_type="migration.email_sent",
+                    category="migration",
+                    target_email="bob@globex.com",
+                    org_id="org_globexinc",
+                    org_name="Globex Inc",
+                    connection="Username-Password-Authentication",
+                    description="Migration email sent to bob@globex.com",
+                    success=True,
+                    created_at=now - timedelta(days=1),
+                ),
+            ]
+            for entry in samples:
+                session.add(entry)
+            logger.info("Seeded %d sample activity logs.", len(samples))
 
         await session.commit()

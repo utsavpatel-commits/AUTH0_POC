@@ -1,0 +1,69 @@
+{% extends "tcs_base.html" %}
+{% block title %}Users{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Users</h1>
+<p class="text-muted mb-4">Invite users to any organisation. Role is assigned after signup.</p>
+
+<div class="tcs-panel mb-4">
+    <div class="tcs-panel-header">Invite User</div>
+    <div class="tcs-panel-body">
+        <form id="tcsInviteForm">
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input type="email" class="form-control" id="tcsEmail" placeholder="user@example.com" required>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="tcsOrgId">
+                        {% for s in org_stats %}
+                        <option value="{{ s.org.id }}">{{ s.org.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-auth0 w-100">
+                        <i class="bi bi-send me-1"></i>Send Invitation
+                    </button>
+                </div>
+            </div>
+        </form>
+        <div id="tcsInviteResult" class="mt-3" style="display:none;"></div>
+    </div>
+</div>
+
+<div class="tcs-panel">
+    <div class="tcs-panel-header">Users by Organisation</div>
+    <div class="table-responsive">
+        <table class="table tcs-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Organisation</th>
+                    <th class="text-center">Total Users</th>
+                    <th class="text-center">Active (Migrated)</th>
+                    <th class="text-center">Pending Migration</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in org_stats %}
+                <tr>
+                    <td class="ps-4 fw-semibold">{{ s.org.name }}</td>
+                    <td class="text-center">{{ s.total }}</td>
+                    <td class="text-center text-success">{{ s.migrated + s.new_users }}</td>
+                    <td class="text-center">
+                        {% if s.pending > 0 %}<span class="badge bg-warning text-dark">{{ s.pending }}</span>{% else %}0{% endif %}
+                    </td>
+                    <td>
+                        <a href="/tcs/users?org={{ s.org.id }}" class="btn-auth0-link btn-sm">Manage</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% include "tcs_scripts.html" %}
+{% endblock %}

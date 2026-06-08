@@ -40,7 +40,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
-from app.services.user_service import create_invited_user, get_org, on_user_signup_complete
+from app.services.activity_service import log_activity
+from app.services.user_service import create_invited_user, get_org, link_idp_sub, on_user_signup_complete
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -107,6 +108,22 @@ async def _handle_signup_complete(event: Dict[str, Any], db: AsyncSession) -> di
         org_id=org_id,
     )
 
+    org = await get_org(db=db, org_id=org_id)
+    await log_activity(
+        db,
+        "user.signup_complete",
+        f"{email} completed signup",
+        category="auth",
+        actor_email=email,
+        actor_sub=sub,
+        org_id=org_id,
+        org_name=org.name if org else None,
+        connection=event.get("connection"),
+        ip_address=(event.get("request") or {}).get("ip"),
+        user_agent=(event.get("request") or {}).get("user_agent"),
+        metadata={"auth0_org_id": event.get("auth0_org_id")},
+    )
+
     return {
         "status": "ok",
         "event": "user.signup_complete",
@@ -132,6 +149,23 @@ async def _handle_login(event: Dict[str, Any], db: AsyncSession) -> dict:
     if email:
         await link_idp_sub(db=db, email=email, sub=sub, email_verified=email_verified)
 
+    org_id = event.get("org_id")
+    org = await get_org(db=db, org_id=org_id) if org_id else None
+    await log_activity(
+        db,
+        "auth.oauth_login",
+        f"Successful login for {email or sub}",
+        category="auth",
+        actor_email=email,
+        actor_sub=sub,
+        org_id=org_id,
+        org_name=org.name if org else event.get("auth0_org_name"),
+        connection=event.get("connection"),
+        ip_address=(event.get("request") or {}).get("ip"),
+        user_agent=(event.get("request") or {}).get("user_agent"),
+        metadata={"auth0_org_id": event.get("auth0_org_id")},
+    )
+
     logger.debug("user.login event processed for sub=%s", sub)
     return {"status": "ok", "event": "user.login"}
 
@@ -155,6 +189,17 @@ async def _handle_invited(event: Dict[str, Any], db: AsyncSession) -> dict:
         email=email,
         org_id=org_id,
         invited_by=invited_by,
+    )
+    org = await get_org(db=db, org_id=org_id)
+    await log_activity(
+        db,
+        "user.invited",
+        f"Invitation sent to {email}",
+        category="user",
+        target_email=email,
+        actor_email=invited_by,
+        org_id=org_id,
+        org_name=org.name if org else None,
     )
     return {
         "status": "ok",

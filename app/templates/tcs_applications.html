@@ -1,0 +1,66 @@
+{% extends "tcs_base.html" %}
+{% block title %}Applications{% endblock %}
+
+{% block content %}
+<h1 class="tcs-page-title">Applications</h1>
+<p class="text-muted mb-4">OAuth 2.0 / OIDC applications registered in your Auth0 tenant.</p>
+
+<div class="tcs-panel mb-4">
+    <div class="tcs-panel-header">Registered Applications</div>
+    <div class="table-responsive">
+        <table class="table tcs-table mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">Application</th>
+                    <th>Type</th>
+                    <th>Client ID</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="ps-4 fw-semibold">TCS Identity Platform</td>
+                    <td><span class="badge bg-primary-subtle text-primary">Regular Web App</span></td>
+                    <td><code class="small">{{ auth0_client_id[:20] }}…</code></td>
+                    <td><a href="/social-login" class="btn-auth0-link">Try Login</a></td>
+                </tr>
+                <tr>
+                    <td class="ps-4 fw-semibold">Management API (M2M)</td>
+                    <td><span class="badge bg-secondary-subtle text-secondary">Machine to Machine</span></td>
+                    <td><code class="small">{{ auth0_mgmt_client_id[:20] }}…</code></td>
+                    <td><span class="text-muted small">Server-side only</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<h2 class="tcs-section-title">Quick Actions</h2>
+<div class="tcs-next-grid">
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-google"></i></div>
+        <h3>Social Login Demo</h3>
+        <p>Test OAuth 2.0 / OIDC with Google, Microsoft, or GitHub. Auth0 normalises identity regardless of provider.</p>
+        <div class="actions">
+            <a href="/social-login" class="btn btn-auth0">Try It Out</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-key"></i></div>
+        <h3>PKCE Auth Code Flow</h3>
+        <p>Standard OAuth 2.0 authorization code flow with PKCE. Thin JWT: sub, email, email_verified only.</p>
+        <div class="actions">
+            <a href="/login" class="btn btn-auth0-outline">Sign In</a>
+            <a href="/architecture" class="btn-auth0-link">Learn More</a>
+        </div>
+    </div>
+    <div class="tcs-next-card">
+        <div class="icon-box"><i class="bi bi-file-earmark-lock"></i></div>
+        <h3>Document Access Demo</h3>
+        <p>Resource-level access control. JWT sub → DB entitlements → document visibility.</p>
+        <div class="actions">
+            <a href="/documents" class="btn btn-auth0-outline">View Demo</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

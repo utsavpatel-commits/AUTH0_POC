@@ -15,9 +15,13 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, EmailStr
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from pydantic import BaseModel
 
 from app.config import settings
+
+# Signer for temporary access links — uses the app SECRET_KEY
+_signer = URLSafeTimedSerializer(settings.secret_key, salt="temp-access-link")
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["platform"])
@@ -188,4 +192,91 @@ async def unlock_account(body: EmailRequest) -> JSONResponse:
         "message": f"Account for {body.email} has been unblocked.",
         "user_id": user_id,
         "was_blocked": was_blocked,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Temporary Access Links
+# ---------------------------------------------------------------------------
+
+DEMO_RESOURCES = {
+    "Q4-Report.pdf": {
+        "title": "Q4 Financial Report",
+        "content": "Revenue: $4.2M | Growth: 23% | EBITDA: $1.1M",
+        "type": "PDF Report",
+    },
+    "roadmap-2025.pdf": {
+        "title": "Product Roadmap 2025",
+        "content": "Q1: Auth0 migration | Q2: Multi-tenancy | Q3: Analytics | Q4: Enterprise tier",
+        "type": "PDF Document",
+    },
+    "user-data.csv": {
+        "title": "User Analytics Export",
+        "content": "Total users: 1,240 | Active: 980 | Churned: 260 | NPS: 67",
+        "type": "CSV Export",
+    },
+}
+
+
+class GenerateLinkRequest(BaseModel):
+    resource: str
+    expires_in: int = 3600  # seconds, default 1 hour
+
+
+@router.post("/api/access/generate", summary="Generate a temporary access link")
+async def generate_access_link(body: GenerateLinkRequest, request: Request) -> JSONResponse:
+    if body.resource not in DEMO_RESOURCES:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Resource '{body.resource}' not found. Available: {list(DEMO_RESOURCES.keys())}",
+        )
+
+    expires_in = min(body.expires_in, 86400)  # cap at 24 hours
+
+    token = _signer.dumps({"resource": body.resource, "expires_in": expires_in})
+
+    base_url = str(request.base_url).rstrip("/")
+    link = f"{base_url}/access/{token}"
+
+    hours = expires_in // 3600
+    minutes = (expires_in % 3600) // 60
+    expiry_label = f"{hours}h" if hours else f"{minutes}m"
+
+    logger.info("Generated temp link for '%s' (expires in %ss)", body.resource, expires_in)
+    return JSONResponse({
+        "link": link,
+        "resource": body.resource,
+        "expires_in": expiry_label,
+        "max_age_seconds": expires_in,
+    })
+
+
+@router.get("/access/{token}", summary="Access a temporary resource link")
+async def access_resource(token: str) -> JSONResponse:
+    try:
+        data = _signer.loads(token, max_age=86400)  # validate signature first
+        resource_name = data.get("resource")
+        expires_in = data.get("expires_in", 3600)
+
+        # Re-validate with actual requested expiry
+        _signer.loads(token, max_age=expires_in)
+
+    except SignatureExpired:
+        raise HTTPException(status_code=403, detail="Link has expired.")
+    except BadSignature:
+        raise HTTPException(status_code=403, detail="Invalid or tampered link.")
+    except Exception:
+        raise HTTPException(status_code=403, detail="Invalid link.")
+
+    resource = DEMO_RESOURCES.get(resource_name)
+    if not resource:
+        raise HTTPException(status_code=404, detail="Resource not found.")
+
+    logger.info("Temp link accessed for '%s'", resource_name)
+    return JSONResponse({
+        "resource": resource_name,
+        "title": resource["title"],
+        "type": resource["type"],
+        "content": resource["content"],
+        "status": "access_granted",
     })

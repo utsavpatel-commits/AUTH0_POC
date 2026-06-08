@@ -187,3 +187,22 @@ async def get_user_by_email(*, db: AsyncSession, email: str) -> Optional[Platfor
 async def get_org(*, db: AsyncSession, org_id: str) -> Optional[Organization]:
     result = await db.execute(select(Organization).where(Organization.id == org_id))
     return result.scalar_one_or_none()
+
+
+async def link_idp_sub(
+    *,
+    db: AsyncSession,
+    email: str,
+    sub: str,
+    email_verified: bool = False,
+) -> Optional[PlatformUser]:
+    """Link an Auth0 sub to a platform user by email."""
+    result = await db.execute(select(PlatformUser).where(PlatformUser.email == email))
+    user = result.scalar_one_or_none()
+    if user and user.idp_sub is None:
+        user.idp_sub = sub
+        user.email_verified = email_verified
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+    return user
