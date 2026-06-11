@@ -5,6 +5,7 @@ All other modules import `settings` from here; never import dotenv elsewhere.
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Optional
 
 from dotenv import load_dotenv
 from pydantic import Field
@@ -24,8 +25,20 @@ class Settings(BaseSettings):
     auth0_mgmt_client_id: str = Field(..., validation_alias="AUTH0_MGMT_CLIENT_ID")
     auth0_mgmt_client_secret: str = Field(..., validation_alias="AUTH0_MGMT_CLIENT_SECRET")
 
+    # Optional — separate Regular Web App for learner passwordless (no org requirement)
+    auth0_passwordless_client_id: Optional[str] = Field(None, validation_alias="AUTH0_PASSWORDLESS_CLIENT_ID")
+    auth0_passwordless_client_secret: Optional[str] = Field(None, validation_alias="AUTH0_PASSWORDLESS_CLIENT_SECRET")
+
     # Platform
     app_base_url: str = Field("http://localhost:8000", validation_alias="APP_BASE_URL")
+    platform_login_url: str = Field(
+        "http://localhost:5180/login",
+        validation_alias="PLATFORM_LOGIN_URL",
+    )
+    post_password_redirect_url: str = Field(
+        "http://localhost:5180/invite/complete",
+        validation_alias="POST_PASSWORD_REDIRECT_URL",
+    )
     secret_key: str = Field(..., validation_alias="SECRET_KEY")
     webhook_secret: str = Field(..., validation_alias="WEBHOOK_SECRET")
     database_url: str = Field("sqlite:///./poc.db", validation_alias="DATABASE_URL")
@@ -58,6 +71,14 @@ class Settings(BaseSettings):
     @property
     def callback_url(self) -> str:
         return f"{self.app_base_url}/callback"
+
+    @property
+    def passwordless_client_id(self) -> str:
+        return self.auth0_passwordless_client_id or self.auth0_client_id
+
+    @property
+    def passwordless_client_secret(self) -> str:
+        return self.auth0_passwordless_client_secret or self.auth0_client_secret
 
     model_config = {
         "env_file": ".env",

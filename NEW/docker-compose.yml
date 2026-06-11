@@ -1,0 +1,52 @@
+name: tcs-web3-platform
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: tcs
+      POSTGRES_PASSWORD: tcs_password
+      POSTGRES_DB: web3_platform
+    ports:
+      - "5440:5432"
+    volumes:
+      - web3_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tcs -d web3_platform"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    command: bash entrypoint.sh
+    environment:
+      DATABASE_URL: postgresql+asyncpg://tcs:tcs_password@postgres:5432/web3_platform
+      LLM_PROVIDER: ${LLM_PROVIDER:-stub}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CORS_ORIGINS: "*"
+    ports:
+      - "8010:8000"
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      VITE_API_BASE: http://localhost:8010
+    ports:
+      - "5180:5180"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/public:/app/public
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+    depends_on:
+      - backend
+
+volumes:
+  web3_pgdata:

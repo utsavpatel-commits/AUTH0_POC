@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+/* ============================================================
+   TCS Web 3.0 — Enterprise design system
+   Brand anchored on The Compliance Store's signature cyan #00a0d7,
+   paired with a deep navy for an enterprise, clinical-trust feel.
+   ============================================================ */
+@theme {
+  /* Brand cyan (primary) */
+  --color-brand-50: #e7f6fc;
+  --color-brand-100: #c3e9f7;
+  --color-brand-200: #8fd6f0;
+  --color-brand-300: #5bc2e9;
+  --color-brand-400: #28aee1;
+  --color-brand-500: #00a0d7; /* TCS primary */
+  --color-brand-600: #0089ba;
+  --color-brand-700: #006f97;
+  --color-brand-800: #005475;
+  --color-brand-900: #003a52;
+
+  /* Navy (secondary / chrome) */
+  --color-navy-50: #eef3f8;
+  --color-navy-100: #d3e0ec;
+  --color-navy-200: #a7c0d8;
+  --color-navy-300: #6f93b4;
+  --color-navy-400: #3d6188;
+  --color-navy-500: #1d4368;
+  --color-navy-600: #143a5c;
+  --color-navy-700: #0f2c46;
+  --color-navy-800: #0b2035;
+  --color-navy-900: #071726;
+
+  /* Accents */
+  --color-accent-emerald: #0f9d6c;
+  --color-accent-amber: #d98a04;
+  --color-accent-rose: #d6435b;
+
+  --font-sans: "Inter", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --radius-card: 0.75rem;
+  --shadow-card: 0 1px 2px rgba(11, 32, 53, 0.04), 0 4px 16px rgba(11, 32, 53, 0.06);
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: #f4f7fa;
+  color: #0b2035;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Brand gradient used on the login hero + accents */
+.bg-brand-gradient {
+  background: linear-gradient(150deg, #0089ba 0%, #00a0d7 45%, #28aee1 100%);
+}
+.bg-navy-gradient {
+  background: linear-gradient(160deg, #0f2c46 0%, #0b2035 100%);
+}
+
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Subtle scrollbar for the app shell */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(0,160,215,.45); }
+  70% { box-shadow: 0 0 0 12px rgba(0,160,215,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,160,215,0); }
+}
+
+/* ============================================================
+   Document Café — rich-text (tiptap) document styling.
+   Shared by the editor surface and the read-only rendered view.
+   ============================================================ */
+.cafe-doc { color: #1e293b; font-size: 14px; line-height: 1.65; }
+.cafe-doc:focus { outline: none; }
+.cafe-doc h1 { font-size: 1.6rem; font-weight: 700; color: #0f1b2d; margin: 1.1rem 0 .5rem; }
+.cafe-doc h2 { font-size: 1.25rem; font-weight: 700; color: #0f1b2d; margin: 1rem 0 .4rem; }
+.cafe-doc h3 { font-size: 1.05rem; font-weight: 600; margin: .85rem 0 .35rem; }
+.cafe-doc p { margin: 0 0 .7rem; }
+.cafe-doc ul { list-style: disc; margin: 0 0 .7rem 1.4rem; }
+.cafe-doc ol { list-style: decimal; margin: 0 0 .7rem 1.4rem; }
+.cafe-doc li { margin: 0 0 .25rem; }
+.cafe-doc a { color: #0089ba; text-decoration: underline; }
+.cafe-doc blockquote { border-left: 3px solid #00a0d7; padding: .15rem 0 .15rem .9rem; margin: .7rem 0; color: #475569; }
+.cafe-doc table { width: 100%; border-collapse: collapse; margin: .7rem 0; }
+.cafe-doc th, .cafe-doc td { border: 1px solid #cbd5e1; padding: .4rem .6rem; text-align: left; vertical-align: top; }
+.cafe-doc th { background: #eef4fb; font-weight: 700; color: #0f1b2d; }
+.cafe-doc p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); color: #94a3b8; float: left; height: 0; pointer-events: none;
+}
+
+/* Document Café — tab + segmented view transitions */
+.cafe-fade { animation: cafe-fade-in .22s ease-out; }
+@keyframes cafe-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.cafe-slide { animation: cafe-slide-in .25s cubic-bezier(.22,.61,.36,1); }
+@keyframes cafe-slide-in { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: none; } }

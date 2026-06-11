@@ -106,6 +106,7 @@ async def _handle_signup_complete(event: Dict[str, Any], db: AsyncSession) -> di
         email=email,
         email_verified=email_verified,
         org_id=org_id,
+        invite_role=event.get("role_requested"),
     )
 
     org = await get_org(db=db, org_id=org_id)

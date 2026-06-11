@@ -52,6 +52,10 @@ async def create_invited_user(
     return user
 
 
+def _invite_role_slug(role: str | None) -> str:
+    return (role or "administrator").lower().replace(" ", "_")
+
+
 async def on_user_signup_complete(
     *,
     db: AsyncSession,
@@ -59,6 +63,7 @@ async def on_user_signup_complete(
     email: str,
     email_verified: bool,
     org_id: str,
+    invite_role: str | None = None,
 ) -> PlatformUser:
     """
     Called when Auth0 fires the signup_complete webhook.
@@ -102,8 +107,16 @@ async def on_user_signup_complete(
     user.email_verified = email_verified
 
     if user.status == UserStatus.INVITED:
-        user.status = UserStatus.PENDING_ROLE_ASSIGNMENT
-        logger.info("User %s accepted invite → pending_role_assignment.", email)
+        role_slug = _invite_role_slug(invite_role)
+        if role_slug in {"administrator", "admin"} or user.invited_by:
+            user.role = "administrator"
+            user.entitlements = ["*"]
+            user.status = UserStatus.ACTIVE
+            user.approved_at = datetime.now(timezone.utc)
+            logger.info("User %s accepted org admin invite → active (no approval).", email)
+        else:
+            user.status = UserStatus.PENDING_ROLE_ASSIGNMENT
+            logger.info("User %s accepted invite → pending_role_assignment.", email)
 
     db.add(user)
     await db.commit()

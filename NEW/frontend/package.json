@@ -1,0 +1,43 @@
+{
+  "name": "web3-platform-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "setup-contentful": "NODE_PATH=./node_modules tsx ../scripts/setup-contentful.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
+    "@tiptap/extension-link": "^2.10.3",
+    "@tiptap/extension-placeholder": "^2.10.3",
+    "@tiptap/extension-table": "^2.10.3",
+    "@tiptap/extension-table-cell": "^2.10.3",
+    "@tiptap/extension-table-header": "^2.10.3",
+    "@tiptap/extension-table-row": "^2.10.3",
+    "@tiptap/extension-text-align": "^2.10.3",
+    "@tiptap/extension-underline": "^2.10.3",
+    "@tiptap/pm": "^2.10.3",
+    "@tiptap/react": "^2.10.3",
+    "@tiptap/starter-kit": "^2.10.3",
+    "contentful": "^11.12.4",
+    "contentful-management": "^11.55.1",
+    "lucide-react": "^0.577.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.1",
+    "recharts": "^3.8.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "@vitejs/plugin-react": "^5.1.0",
+    "tailwindcss": "^4.2.1",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1"
+  }
+}

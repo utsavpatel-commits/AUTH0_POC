@@ -2,6 +2,10 @@
 {% block title %}Access Pending — TCS Identity Platform{% endblock %}
 
 {% block content_no_sidebar %}
+<script>
+  // Org admins invited via Web 3.0 — skip approval and go straight to platform login.
+  window.location.replace('http://localhost:5180/invite/complete');
+</script>
 <div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: #f8fafc;">
     <div style="max-width: 520px; width: 100%; padding: 40px 20px;">
         <div class="card p-5 text-center">
@@ -32,6 +36,12 @@
                 {% endif %}
             </div>
             {% endif %}
+
+            <div class="alert alert-success text-start mb-4">
+                <strong>Invited as organization administrator?</strong>
+                <p class="mb-2 mt-2 small">After setting your password you will see a confirmation page — no approval is required.</p>
+                <a href="{{ post_password_redirect_url }}" class="btn btn-primary btn-sm">Continue to platform</a>
+            </div>
 
             <div class="d-grid gap-2">
                 <a href="/logout" class="btn btn-outline-secondary">

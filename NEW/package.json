@@ -1,0 +1,7 @@
+{
+  "name": "tcs-web3-platform",
+  "private": true,
+  "scripts": {
+    "setup-contentful": "npm --prefix frontend run setup-contentful"
+  }
+}

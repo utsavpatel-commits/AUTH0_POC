@@ -122,6 +122,43 @@
                 </div>
             </a>
         </div>
+        <!-- Option D — Passwordless OTP -->
+        <div class="col-md-4">
+            <a href="/learner/login" class="flow-card h-100">
+                <div class="icon" style="background:#0c4a6e22;">
+                    <i class="bi bi-envelope-check" style="color:#38bdf8;"></i>
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <h5 class="fw-bold mb-0">Passwordless OTP</h5>
+                    <span class="tag" style="border-color:#0284c7;color:#38bdf8;background:#0c4a6e22;">LMS Learner</span>
+                </div>
+                <p class="text-secondary small mb-4">Email-only login for learners. Auth0 Passwordless generates OTP, Amazon SES delivers email, JWT issued on verify.</p>
+                <div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#0284c7;">1</span>
+                        <div class="step-line text-secondary small">Learner enters email address</div>
+                    </div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#0284c7;">2</span>
+                        <div class="step-line text-secondary small">Auth0 Passwordless → OTP + rate limit + brute force</div>
+                    </div>
+                    <div class="d-flex gap-3 mb-2">
+                        <span class="step-badge" style="background:#0284c7;">3</span>
+                        <div class="step-line text-secondary small">Amazon SES delivers 6-digit code</div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <span class="step-badge" style="background:#0284c7;">4</span>
+                        <div class="text-secondary small">Verify code → JWT issued → learner dashboard</div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="btn btn-sm px-4" style="background:#0284c7;color:#fff;">
+                        <i class="bi bi-arrow-right me-1"></i>Try Passwordless Login
+                    </span>
+                </div>
+            </a>
+        </div>
+
         <!-- Option C — Social Login -->
         <div class="col-md-4">
             <a href="/social-login" class="flow-card h-100">

@@ -23,6 +23,7 @@ from typing import Optional
 from fastapi import Depends, FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -119,6 +120,8 @@ async def lifespan(app: FastAPI):
     await create_tables()
     await seed_data()
     await _enable_org_connections()
+    from app.services.auth0_email_branding import sync_passwordless_email_branding
+    await sync_passwordless_email_branding()
     logger.info("Startup complete. Listening on %s", settings.app_base_url)
     yield
     logger.info("Shutting down.")
@@ -171,7 +174,10 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 
 from pathlib import Path
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "app" / "templates"))
+
+_BASE_DIR = Path(__file__).parent
+templates = Jinja2Templates(directory=str(_BASE_DIR / "app" / "templates"))
+app.mount("/static", StaticFiles(directory=str(_BASE_DIR / "app" / "static")), name="static")
 
 
 # ---------------------------------------------------------------------------
@@ -188,7 +194,7 @@ app.include_router(migration.router)    # /api/migrate/...
 app.include_router(tcs_admin.router)    # /tcs/dashboard, /api/tcs/migrate/...
 app.include_router(subscriptions.router)  # /subscription/dashboard, /permissions/..., /mfa/...
 app.include_router(platform_router.router)  # /architecture, /account-recovery, /documents, /api/account/...
-app.include_router(otp_auth.router)         # /api/otp/request, /api/otp/verify
+app.include_router(otp_auth.router)         # /learner/login, /api/passwordless/...
 
 
 # ---------------------------------------------------------------------------
@@ -308,6 +314,8 @@ async def pending_page(request: Request, db=Depends(get_db)) -> HTMLResponse:
             "request": request,
             "user": user,
             "status": status_val,
+            "platform_login_url": settings.platform_login_url,
+            "post_password_redirect_url": settings.post_password_redirect_url,
         },
     )
 

@@ -89,7 +89,10 @@ function buildPayload(event, eventType) {
   // For signup events, include the role that was set at invitation time
   // (stored in app_metadata by the invite workflow or dashboard)
   if (eventType === "user.signup_complete" && event.user.app_metadata) {
-    payload.role_requested = event.user.app_metadata.requested_role || null;
+    payload.role_requested =
+      event.user.app_metadata.invite_role ||
+      event.user.app_metadata.requested_role ||
+      null;
     payload.org_id = event.user.app_metadata.platform_org_id || null;
   }
 

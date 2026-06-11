@@ -21,6 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.oauth_helpers import resolve_pkce_from_callback, store_pkce_session
+from app.auth.service import auth_service
 from app.config import settings
 from app.database import get_db
 from app.models import PlatformUser, UserStatus
@@ -28,6 +29,37 @@ from app.services.activity_service import client_ip, client_user_agent, log_acti
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
+
+
+def _post_password_redirect(email: str | None = None) -> RedirectResponse:
+    """After password setup — welcome page, not the login form."""
+    url = settings.post_password_redirect_url
+    if email:
+        url = f"{url}?{urllib.parse.urlencode({'email': email})}"
+    return RedirectResponse(url=url, status_code=302)
+
+
+async def _auth0_app_metadata(sub: str) -> dict:
+    try:
+        user = await auth_service.get_user(sub)
+        return user.get("app_metadata") or {}
+    except Exception as exc:
+        logger.warning("Could not load Auth0 app_metadata for %s: %s", sub, exc)
+        return {}
+
+
+def _is_org_admin_invite(metadata: dict) -> bool:
+    if not metadata.get("needsInvitation") or metadata.get("inviteType") != "org_join":
+        return False
+    role = (metadata.get("invite_role") or "administrator").lower().replace(" ", "_")
+    return role in {"administrator", "admin"}
+
+
+@router.get("/platform-login", include_in_schema=False)
+async def platform_login_entry(request: Request):
+    """HTTPS landing page after Auth0 password reset — forwards to Web 3.0 login."""
+    email = request.query_params.get("email")
+    return _post_password_redirect(email)
 
 
 # ---------------------------------------------------------------------------
@@ -42,13 +74,42 @@ async def login(
     organization_name: Optional[str] = None,
     invitation: Optional[str] = None,
     connection: Optional[str] = None,         # social: google-oauth2, windowslive, github
+    force_oauth: Optional[str] = None,
 ):
     """
     Redirect the browser to Auth0 Universal Login.
 
     When called from an invitation link, Auth0 appends ?invitation=...&organization=...
     These must be forwarded to Auth0's /authorize so it shows the password-setting UI.
+
+    After password reset Auth0 lands here with no params — send org admins to the
+    Web 3.0 platform login instead of starting OAuth (which shows Access Pending).
     """
+    if invitation or organization:
+        state, challenge, callback = store_pkce_session(request)
+        effective_org = organization or org_id
+        params = {
+            "response_type": "code",
+            "client_id": settings.auth0_client_id,
+            "redirect_uri": callback,
+            "scope": "openid profile email",
+            "state": state,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
+            "organization": effective_org,
+            "invitation": invitation,
+        }
+        if organization_name:
+            params["organization_name"] = organization_name
+        auth_url = f"{settings.auth0_authorize_url}?{urllib.parse.urlencode({k: v for k, v in params.items() if v})}"
+        logger.info("Org invitation login — forwarding to Auth0 authorize.")
+        return RedirectResponse(url=auth_url, status_code=302)
+
+    if not force_oauth:
+        email = request.query_params.get("email")
+        logger.info("Post-password or bare /login hit — redirecting to platform login.")
+        return _post_password_redirect(email)
+
     state, challenge, callback = store_pkce_session(request)
 
     # organization can come from ?org_id= (our param) or ?organization= (Auth0 invitation link)
@@ -201,8 +262,16 @@ async def callback(
     request.session.pop("oauth_state", None)
     request.session.pop("oauth_redirect_uri", None)
 
+    metadata = await _auth0_app_metadata(sub)
+
     if platform_user is None:
-        # Unknown user — store minimal info in session and redirect to a pending page
+        if _is_org_admin_invite(metadata):
+            logger.info(
+                "Org admin invite accepted for %s — redirecting to platform login (no approval).",
+                email,
+            )
+            return _post_password_redirect(email)
+
         request.session["user_sub"] = sub
         request.session["user_email"] = email or ""
         request.session["user_email_verified"] = email_verified
@@ -244,10 +313,23 @@ async def callback(
         logger.info("MFA verified for %s — redirecting to %s", email, mfa_redirect)
         return RedirectResponse(url=mfa_redirect, status_code=302)
 
+    if _is_org_admin_invite(metadata) or platform_user.invited_by:
+        if platform_user.status != UserStatus.ACTIVE:
+            platform_user.status = UserStatus.ACTIVE
+            if not platform_user.role:
+                platform_user.role = "administrator"
+            if not platform_user.entitlements:
+                platform_user.entitlements = ["*"]
+            from datetime import datetime, timezone
+
+            platform_user.approved_at = datetime.now(timezone.utc)
+            await db.commit()
+            await db.refresh(platform_user)
+        return _post_password_redirect(email or platform_user.email)
+
     if platform_user.status == UserStatus.ACTIVE:
         return RedirectResponse(url="/dashboard", status_code=302)
-    else:
-        return RedirectResponse(url="/pending", status_code=302)
+    return RedirectResponse(url="/pending", status_code=302)
 
 
 @router.get("/logout", summary="Log out — clear session and redirect to Auth0 logout")
