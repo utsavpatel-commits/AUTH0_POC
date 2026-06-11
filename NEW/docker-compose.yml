@@ -20,6 +20,8 @@ services:
   backend:
     build: ./backend
     command: bash entrypoint.sh
+    env_file:
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://tcs:tcs_password@postgres:5432/web3_platform
       LLM_PROVIDER: ${LLM_PROVIDER:-stub}

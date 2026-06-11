@@ -3,8 +3,8 @@
 
 {% block content_no_sidebar %}
 <script>
-  // Org admins invited via Web 3.0 — skip approval and go straight to platform login.
-  window.location.replace('http://localhost:5180/invite/complete');
+  // Org admins invited via Web 3.0 — skip approval and go to post-password page.
+  window.location.replace('{{ post_password_redirect_url }}');
 </script>
 <div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: #f8fafc;">
     <div style="max-width: 520px; width: 100%; padding: 40px 20px;">
